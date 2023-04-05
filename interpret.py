@@ -1,6 +1,76 @@
 import argparse
 import sys
 import xml.etree.ElementTree as et
+import abc
+
+
+
+class Operation(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def accept(self, visitor, instruction):
+        pass
+
+
+class DEFVAR(Operation):
+    def accept(self, visitor, instruction):
+        visitor.visit_DEFVAR(self, instruction)
+
+
+class MOVE(Operation):
+    def accept(self, visitor, instruction):
+        visitor.visit_MOVE(self, instruction)
+
+
+class Visitor(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def visit_DEFVAR(self, DEFVAR, instruction):
+        pass
+
+    @abc.abstractmethod
+    def visit_MOVE(self, MOVE, instruction):
+        pass
+
+
+class Interpreter(Visitor):
+    def visit_DEFVAR(self, DEFVAR, instruction):
+        var = instruction.find('arg1').text
+        var_name_parts = var.split('@')
+        frame = var_name_parts[0]
+        name = var_name_parts[1]
+        if (name not in frames[frame]):
+            match frame:
+                case "GF":
+                    frames["GF"][name] = None
+                case "LF":
+                    frames["LF"][name] = None
+                case "TF":
+                    frames["TF"][name] = None
+        else:
+            print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
+            exit(52)
+
+    def visit_MOVE(self, MOVE, instruction):
+        destination = instruction.find('arg1').text
+        var_name_parts = destination.split('@')
+        frame = var_name_parts[0]
+        name = var_name_parts[1]
+
+        type = instruction.find('arg2').attrib['type']
+        value = instruction.find('arg2').text
+        match type:
+            case "int":
+                value = int(instruction.find('arg2').text)
+            case "string":
+                value = instruction.find('arg2').text
+            case "nil":
+                value = None
+            case _:
+                var_name_parts = instruction.find('arg2').text.split('@')
+                srcframe = var_name_parts[0]
+                srcname = var_name_parts[1]
+                value = frames[srcframe][srcname]
+        frames[frame][name] = value
+
 
 def printHelp():
     print("Napoveda k programu interpret.py:\n")
@@ -23,48 +93,6 @@ def initializeFrames():
     TF = {}
     frames = {"GF" : GF, "LF" : LF, "TF" : TF}
     return frames
-
-def interpretDEFVAR(instruction):
-    var = instruction.find('arg1').text
-    var_name_parts = var.split('@')
-    frame = var_name_parts[0]
-    name = var_name_parts[1]
-    if (name not in frames[frame]):
-        match frame:
-            case "GF":
-                frames["GF"][name] = None
-            case "LF":
-                frames["LF"][name] = None
-            case "TF":
-                frames["TF"][name] = None
-    else:
-        print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
-        exit(52)
-
-def interpretMOVE(instruction):
-    destination = instruction.find('arg1').text
-    var_name_parts = destination.split('@')
-    frame = var_name_parts[0]
-    name = var_name_parts[1]
-
-    type = instruction.find('arg2').attrib['type']
-    value = instruction.find('arg2').text
-    match type:
-        case "int":
-            value = int(instruction.find('arg2').text)
-        case "string":
-            value = instruction.find('arg2').text
-        case "nil":
-            value = None
-        case _:
-            var_name_parts = instruction.find('arg2').text.split('@')
-            srcframe = var_name_parts[0]
-            srcname = var_name_parts[1]
-            value = frames[srcframe][srcname]
-    frames[frame][name] = value
-
-
-
 
 parser = initializeArgumentParser()
 args = parser.parse_args()
@@ -94,13 +122,20 @@ for instruction in root.findall('.//instruction[@order]'):
 
 frames = initializeFrames()
 
+#initialization of operation classes
+defvar = DEFVAR()
+move = MOVE()
+
+#initialization of visitor interpreter
+interpreter = Interpreter()
+
 for order, instruction in instructions_dict.items():
     opcode = instruction.get('opcode')
     match opcode:
         case "DEFVAR":
-            interpretDEFVAR(instruction)
+            defvar.accept(interpreter, instruction)
         case "MOVE":
-            interpretMOVE(instruction)
+            move.accept(interpreter, instruction)
         case "WRITE":
             print("mam write")
 
