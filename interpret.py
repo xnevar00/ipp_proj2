@@ -3,36 +3,59 @@ import sys
 import xml.etree.ElementTree as et
 import abc
 
-
-
 class Operation(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def accept(self, visitor, instruction):
         pass
 
-
 class DEFVAR(Operation):
     def accept(self, visitor, instruction):
         visitor.visit_DEFVAR(self, instruction)
-
 
 class MOVE(Operation):
     def accept(self, visitor, instruction):
         visitor.visit_MOVE(self, instruction)
 
+class WRITE(Operation):
+    def accept(self, visitor, instruction):
+        visitor.visit_WRITE(self, instruction)
+
+    def handleArgument(self, instruction):
+        type = instruction.find('arg1').attrib['type']
+        value = instruction.find('arg1').text
+        match type:
+            case "var":
+                var_name_parts = value.split('@')
+                frame = var_name_parts[0]
+                value = var_name_parts[1]
+                match frame:
+                    case "GF":
+                        value = frames["GF"][value]
+                    case "LF":
+                        value = frames["LF"][value]
+                    case "TF":
+                        value = frames["TF"][value]
+            case "nil":
+                value = ""
+            case "string" | "bool" | "int":
+                value = value
+        return value
 
 class Visitor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def visit_DEFVAR(self, DEFVAR, instruction):
+    def visit_DEFVAR(self, element : DEFVAR, instruction):
         pass
 
     @abc.abstractmethod
-    def visit_MOVE(self, MOVE, instruction):
+    def visit_MOVE(self, element : MOVE, instruction):
         pass
 
+    @abc.abstractmethod
+    def visit_WRITE(self, element : WRITE, instruction):
+        pass
 
 class Interpreter(Visitor):
-    def visit_DEFVAR(self, DEFVAR, instruction):
+    def visit_DEFVAR(self, element : DEFVAR, instruction):
         var = instruction.find('arg1').text
         var_name_parts = var.split('@')
         frame = var_name_parts[0]
@@ -49,7 +72,7 @@ class Interpreter(Visitor):
             print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
             exit(52)
 
-    def visit_MOVE(self, MOVE, instruction):
+    def visit_MOVE(self, element : MOVE, instruction):
         destination = instruction.find('arg1').text
         var_name_parts = destination.split('@')
         frame = var_name_parts[0]
@@ -70,6 +93,10 @@ class Interpreter(Visitor):
                 srcname = var_name_parts[1]
                 value = frames[srcframe][srcname]
         frames[frame][name] = value
+    
+    def visit_WRITE(self, element : WRITE, instruction):
+        value = element.handleArgument(instruction)
+        print(value, end='')
 
 
 def printHelp():
@@ -88,10 +115,7 @@ def initializeArgumentParser():
     return parser
 
 def initializeFrames():
-    GF = {}
-    LF = {}
-    TF = {}
-    frames = {"GF" : GF, "LF" : LF, "TF" : TF}
+    frames = {"GF" : {}, "LF" : {}, "TF" : {}}
     return frames
 
 parser = initializeArgumentParser()
@@ -125,6 +149,7 @@ frames = initializeFrames()
 #initialization of operation classes
 defvar = DEFVAR()
 move = MOVE()
+write = WRITE()
 
 #initialization of visitor interpreter
 interpreter = Interpreter()
@@ -137,6 +162,5 @@ for order, instruction in instructions_dict.items():
         case "MOVE":
             move.accept(interpreter, instruction)
         case "WRITE":
-            print("mam write")
+            write.accept(interpreter, instruction)
 
-print(frames["GF"]["a"])
