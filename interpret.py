@@ -196,6 +196,7 @@ defvar = DEFVAR()
 move = MOVE()
 write = WRITE()
 create_frame = CREATEFRAME()
+push_frame = PUSHFRAME()
 
 #initialization of visitor interpreter
 interpreter = Interpreter()
@@ -211,4 +212,6 @@ for order, instruction in instructions_dict.items():
             write.accept(interpreter, instruction)
         case "CREATEFRAME":
             create_frame.accept(interpreter, instruction)
+        case "PUSHFRAME":
+            push_frame.accept(interpreter, instruction)
 
