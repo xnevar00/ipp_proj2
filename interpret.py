@@ -8,6 +8,19 @@ class Operation(metaclass=abc.ABCMeta):
     def accept(self, visitor, instruction):
         pass
 
+    def checkExistingVar(self, frame, var):
+        if var in frames[frame]:
+            return True
+        else:
+            return False
+    
+    def checkExistingFrame(self, frame):
+        if (frames[frame] == None):
+            return False
+        else:
+            return True
+
+
 class DEFVAR(Operation):
     def accept(self, visitor, instruction):
         visitor.visit_DEFVAR(self, instruction)
@@ -28,18 +41,30 @@ class WRITE(Operation):
                 var_name_parts = value.split('@')
                 frame = var_name_parts[0]
                 value = var_name_parts[1]
-                match frame:
-                    case "GF":
-                        value = frames["GF"][value]
-                    case "LF":
-                        value = frames["LF"][value]
-                    case "TF":
-                        value = frames["TF"][value]
+                if (self.checkExistingVar(frame, value) == True):
+                    match frame:
+                        case "GF":
+                            value = frames["GF"][value]
+                        case "LF":
+                            value = frames["LF"][value]
+                        case "TF":
+                            value = frames["TF"][value]
+                else:
+                    print("Dana promenna neexistuje", file=sys.stderr)
+                    exit(54)
             case "nil":
                 value = ""
             case "string" | "bool" | "int":
                 value = value
         return value
+
+class CREATEFRAME(Operation):
+    def accept(self, visitor, instruction):
+        visitor.visit_CREATEFRAME(self, instruction)
+
+class PUSHFRAME(Operation):
+    def accept(self, visitor, instruction):
+        visitor.visit_PUSHFRAME(self, instruction)
 
 class Visitor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -54,23 +79,35 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_WRITE(self, element : WRITE, instruction):
         pass
 
+    @abc.abstractmethod
+    def visit_CREATEFRAME(self, element : CREATEFRAME, instruction):
+        pass
+
+    @abc.abstractmethod
+    def visit_PUSHFRAME(self, element : PUSHFRAME, instruction):
+        pass
+
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction):
         var = instruction.find('arg1').text
         var_name_parts = var.split('@')
         frame = var_name_parts[0]
         name = var_name_parts[1]
-        if (name not in frames[frame]):
-            match frame:
-                case "GF":
-                    frames["GF"][name] = None
-                case "LF":
-                    frames["LF"][name] = None
-                case "TF":
-                    frames["TF"][name] = None
+        if (element.checkExistingFrame(frame) == True):
+            if (element.checkExistingVar(frame, name) == False):
+                match frame:
+                    case "GF":
+                        frames["GF"][name] = None
+                    case "LF":
+                        frames["LF"][name] = None
+                    case "TF":
+                        frames["TF"][name] = None
+            else:
+                print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
+                exit(52)
         else:
-            print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
-            exit(52)
+            print("Nelze definovat promennou v neexistujicim ramci", file=sys.stderr)
+            exit(55)
 
     def visit_MOVE(self, element : MOVE, instruction):
         destination = instruction.find('arg1').text
@@ -97,6 +134,14 @@ class Interpreter(Visitor):
     def visit_WRITE(self, element : WRITE, instruction):
         value = element.handleArgument(instruction)
         print(value, end='')
+    
+    def visit_CREATEFRAME(self, element : CREATEFRAME, instruction):
+        frames["TF"] = {}
+
+    def visit_PUSHFRAME(self, element : PUSHFRAME, instruction):
+        #TODO: presunout aktualni LF na zasobnik a az pak ho nahradit TF
+        frames["LF"] = frames["TF"]
+
 
 
 def printHelp():
@@ -115,7 +160,7 @@ def initializeArgumentParser():
     return parser
 
 def initializeFrames():
-    frames = {"GF" : {}, "LF" : {}, "TF" : {}}
+    frames = {"GF" : {}, "LF" : None, "TF" : None}
     return frames
 
 parser = initializeArgumentParser()
@@ -150,6 +195,7 @@ frames = initializeFrames()
 defvar = DEFVAR()
 move = MOVE()
 write = WRITE()
+create_frame = CREATEFRAME()
 
 #initialization of visitor interpreter
 interpreter = Interpreter()
@@ -163,4 +209,6 @@ for order, instruction in instructions_dict.items():
             move.accept(interpreter, instruction)
         case "WRITE":
             write.accept(interpreter, instruction)
+        case "CREATEFRAME":
+            create_frame.accept(interpreter, instruction)
 
