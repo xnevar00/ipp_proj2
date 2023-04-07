@@ -28,7 +28,7 @@ class Visitor(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def visit_ADD(self, element : ADD, instruction, interpret):
+    def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret):
         pass
 
 class Interpreter(Visitor):
@@ -97,7 +97,7 @@ class Interpreter(Visitor):
             print("Zasobnik lokalnich ramcu je prazdny, POPFRAME nelze provest", file=sys.stderr)
             exit(55)
 
-    def visit_ADD(self, element : ADD, instruction, interpret):
+    def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret, operation):
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
         is_symb_arg2, value_arg2 = checkSymbTypeAndValue(arg2, Type.INT, interpret)
@@ -111,6 +111,36 @@ class Interpreter(Visitor):
                 print("Dana promenna neexistuje", file=sys.stderr)
                 exit(54)
             #TODO: udelat podporu edgecasu, napr int@+12
-            interpret.frames[frame][name]["value"] = int(value_arg2) + int(value_arg3)
+            match operation:
+                case "ADD":
+                    interpret.frames[frame][name]["value"] = int(value_arg2) + int(value_arg3)
+                case "SUB":
+                    interpret.frames[frame][name]["value"] = int(value_arg2) - int(value_arg3)
+                case "MUL":
+                    interpret.frames[frame][name]["value"] = int(value_arg2) * int(value_arg3)
+                case "IDIV":
+                    if (int(value_arg3) == 0):
+                        print("Deleni nulou", file=sys.stderr)
+                        exit(57)
+                    interpret.frames[frame][name]["value"] = int(value_arg2) // int(value_arg3)
+
             interpret.frames[frame][name]["type"] = Type.INT
         return
+
+    #def visit_SUB(self, element: ADD, instruction, interpret):
+     #   arg2 = instruction.find('arg2')
+      #  arg3 = instruction.find('arg3')
+       # is_symb_arg2, value_arg2 = checkSymbTypeAndValue(arg2, Type.INT, interpret)
+        #is_symb_arg3, value_arg3 = checkSymbTypeAndValue(arg3, Type.INT, interpret)
+        #if (is_symb_arg2 == True & is_symb_arg3 == True):
+         #   frame, name = parseFrameAndName(instruction.find('arg1').text)
+          #  if (checkExistingFrame(frame, interpret) == False):
+           #     print("Dany ramec neexistuje", file=sys.stderr)
+            #    exit(55)
+            #if (checkExistingVar(frame, name, interpret) == False):
+             #   print("Dana promenna neexistuje", file=sys.stderr)
+              #  exit(54)
+            #TODO: udelat podporu edgecasu, napr int@+12
+            #interpret.frames[frame][name]["value"] = int(value_arg2) - int(value_arg3)
+            #interpret.frames[frame][name]["type"] = Type.INT
+        #return

@@ -65,6 +65,9 @@ class Interpret:
         push_frame = PUSHFRAME()
         pop_frame = POPFRAME()
         add = ADD()
+        sub = SUB()
+        mul = MUL()
+        idiv = IDIV()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -86,4 +89,10 @@ class Interpret:
                     pop_frame.accept(interpreter, instruction, self)
                 case "ADD":
                     add.accept(interpreter, instruction, self)
+                case "SUB":
+                    sub.accept(interpreter, instruction, self)
+                case "MUL":
+                    mul.accept(interpreter, instruction, self)
+                case "IDIV":
+                    idiv.accept(interpreter, instruction, self)
 

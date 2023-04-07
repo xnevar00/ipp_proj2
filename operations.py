@@ -33,4 +33,16 @@ class POPFRAME(Operation):
 
 class ADD(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_ADD(self, instruction, interpret)
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "ADD")
+
+class SUB(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "SUB")
+
+class MUL(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "MUL")
+
+class IDIV(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "IDIV")
