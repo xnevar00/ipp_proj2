@@ -64,6 +64,7 @@ class Interpret:
         create_frame = CREATEFRAME()
         push_frame = PUSHFRAME()
         pop_frame = POPFRAME()
+        add = ADD()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -83,4 +84,6 @@ class Interpret:
                     push_frame.accept(interpreter, instruction, self)
                 case "POPFRAME":
                     pop_frame.accept(interpreter, instruction, self)
+                case "ADD":
+                    add.accept(interpreter, instruction, self)
 
