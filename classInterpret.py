@@ -80,6 +80,7 @@ class Interpret:
         strlen = STRLEN()
         getchar = GETCHAR()
         setchar = SETCHAR()
+        exit = EXIT()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -131,5 +132,6 @@ class Interpret:
                     getchar.accept(interpreter, instruction, self)
                 case "SETCHAR":
                     setchar.accept(interpreter, instruction, self)
-                
+                case "EXIT":
+                    exit.accept(interpreter, instruction, self)
 

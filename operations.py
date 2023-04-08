@@ -94,3 +94,7 @@ class GETCHAR(Operation):
 class SETCHAR(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_SETCHAR(self, instruction, interpret)
+
+class EXIT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_EXIT(self, instruction, interpret)

@@ -63,6 +63,10 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_SETCHAR(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_EXIT(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         frame, name = parseFrameAndName(instruction.find('arg1').text)
@@ -374,3 +378,16 @@ class Interpreter(Visitor):
             else:
                 print("Spatny typ operandu", file=sys.stderr)
                 exit(53)
+
+    def visit_EXIT(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
+        if (type_arg1 != Type.INT):
+            print("Spatny typ operandu", file=sys.stderr)
+            exit(53)
+        elif ((value_arg1 < 0) or (value_arg1 > 49)):
+            print("Spatna hodnota operandu", file=sys.stderr)
+            exit(57)
+        else:
+            exit(value_arg1)
+        
