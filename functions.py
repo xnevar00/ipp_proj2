@@ -114,9 +114,7 @@ def checkSymbTypeAndValue(arg, interpret):
 
     if (is_var == True):
         frame, name = parseFrameAndName(arg.text)
-        if (interpret.frames[frame][name]["type"] == Type.UNDEFINED):
-            print("Chybejici hodnota", file=sys.stderr)
-            exit(56)
+        checkInitializedVar(interpret.frames[frame][name])
         return type, interpret.frames[frame][name]["value"]
     else:
         is_const, type = isConst(arg.attrib['type'])
@@ -125,6 +123,7 @@ def checkSymbTypeAndValue(arg, interpret):
         else: 
             return False, -1
         
+#kontroluje, zda byla do promenne vlozena hodnota. Pokud ne, ukonci program s odpovidajici chybou
 def checkInitializedVar(var):
     if (var["type"] == Type.UNDEFINED):
         print("Chybejici hodnota", file=sys.stderr)

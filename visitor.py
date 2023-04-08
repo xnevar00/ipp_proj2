@@ -32,17 +32,12 @@ class Visitor(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def visit_LT_GT_EQ(self, element, instruction, interpret):
+    def visit_LT_GT_EQ_AND_OR(self, element, instruction, interpret):
         pass
 
     @abc.abstractmethod
-    def visit_LT_GT_EQ(self, element, instruction, interpret):
+    def visit_NOT(self, element, instruction, interpret):
         pass
-
-    @abc.abstractmethod
-    def visit_LT_GT_EQ(self, element, instruction, interpret):
-        pass
-
 
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
@@ -154,7 +149,7 @@ class Interpreter(Visitor):
 
             interpret.frames[frame][name]["type"] = Type.INT
 
-    def visit_LT_GT_EQ(self, element: LT, instruction, interpret, operation):
+    def visit_LT_GT_EQ_AND_OR(self, element, instruction, interpret, operation):
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -186,10 +181,50 @@ class Interpreter(Visitor):
                             interpret.frames[frame_arg1][name_arg1]["value"] = "true"
                         else:
                             interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+                    case "AND":
+                        if (type_arg2 == Type.BOOL):
+                            if (value_arg2 == "true" and value_arg3 == "true"):
+                                interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                            else:
+                                interpret.frames[frame_arg1][name_arg1]["value"] = "false"     
+                        else:
+                            print("Spatny typ operandu", file=sys.stderr)
+                            exit(53)
+                    case "OR":
+                        if (type_arg2 == Type.BOOL):
+                            if (value_arg2 == "true" or value_arg3 == "true"):
+                                interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                            else:
+                                interpret.frames[frame_arg1][name_arg1]["value"] = "false" 
+                        else:
+                            print("Spatny typ operandu", file=sys.stderr)
+                            exit(53)
 
                 interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
             else:
                 print("Nekompatibilni typy v porovnani", file=sys.stderr)
                 exit(53)
 
+    def visit_NOT(self, element : NOT, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            if (type_arg2 == Type.BOOL):
+                if (value_arg2 == "false"):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                elif (value_arg2 == "true"):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+                interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
 

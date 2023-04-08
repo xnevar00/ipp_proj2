@@ -49,12 +49,24 @@ class IDIV(Operation):
 
 class LT(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_LT_GT_EQ(self, instruction, interpret, "LT")
+        visitor.visit_LT_GT_EQ_AND_OR(self, instruction, interpret, "LT")
 
 class GT(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_LT_GT_EQ(self, instruction, interpret, "GT")
+        visitor.visit_LT_GT_EQ_AND_OR(self, instruction, interpret, "GT")
 
 class EQ(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_LT_GT_EQ(self, instruction, interpret, "EQ")
+        visitor.visit_LT_GT_EQ_AND_OR(self, instruction, interpret, "EQ")
+
+class AND(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LT_GT_EQ_AND_OR(self, instruction, interpret, "AND")
+
+class OR(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LT_GT_EQ_AND_OR(self, instruction, interpret, "OR")
+
+class NOT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_NOT(self, instruction, interpret)

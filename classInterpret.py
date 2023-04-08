@@ -71,6 +71,9 @@ class Interpret:
         lt = LT()
         gt = GT()
         eq = EQ()
+        and_op = AND()
+        or_op = OR()
+        not_op = NOT()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -104,5 +107,11 @@ class Interpret:
                     gt.accept(interpreter, instruction, self)
                 case "EQ":
                     eq.accept(interpreter, instruction, self)
+                case "AND":
+                    and_op.accept(interpreter, instruction, self)
+                case "OR":
+                    or_op.accept(interpreter, instruction, self)
+                case "NOT":
+                    not_op.accept(interpreter, instruction, self)
                 
 
