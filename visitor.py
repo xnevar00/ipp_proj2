@@ -39,6 +39,14 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_NOT(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_INT2CHAR(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_STRI2INT(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         frame, name = parseFrameAndName(instruction.find('arg1').text)
@@ -228,3 +236,46 @@ class Interpreter(Visitor):
                 print("Spatny typ operandu", file=sys.stderr)
                 exit(53)
 
+    def visit_INT2CHAR(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            if ((type_arg2 == Type.INT) and (0 <= value_arg2 <= 0x10FFFF)):
+                char_value_arg2 = chr(value_arg2)
+                interpret.frames[frame_arg1][name_arg1]["value"] = char_value_arg2
+                interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+            else:
+                print("Chybna prace s retezcem", file=sys.stderr)
+                exit(58)
+
+    def visit_STRI2INT(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if ((type_arg2 == Type.STRING) & (type_arg3 == Type.INT)):
+                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = ord(value_arg2[value_arg3])
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
+                else:
+                    print("Chybna prace s retezcem", file=sys.stderr)
+                    exit(58)

@@ -74,6 +74,8 @@ class Interpret:
         and_op = AND()
         or_op = OR()
         not_op = NOT()
+        int2char = INT2CHAR()
+        stri2int = STRI2INT()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -113,5 +115,9 @@ class Interpret:
                     or_op.accept(interpreter, instruction, self)
                 case "NOT":
                     not_op.accept(interpreter, instruction, self)
+                case "INT2CHAR":
+                    int2char.accept(interpreter, instruction, self)
+                case "STRI2INT":
+                    stri2int.accept(interpreter, instruction, self)
                 
 

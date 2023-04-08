@@ -70,3 +70,11 @@ class OR(Operation):
 class NOT(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_NOT(self, instruction, interpret)
+
+class INT2CHAR(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_INT2CHAR(self, instruction, interpret)
+
+class STRI2INT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_STRI2INT(self, instruction, interpret)
