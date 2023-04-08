@@ -119,7 +119,10 @@ def checkSymbTypeAndValue(arg, interpret):
     else:
         is_const, type = isConst(arg.attrib['type'])
         if (is_const == True):
-                return type, arg.text
+                if (arg.text == None and type == Type.STRING):
+                    return type, ""
+                else:
+                    return type, arg.text
         else: 
             return False, -1
         

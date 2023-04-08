@@ -76,6 +76,10 @@ class Interpret:
         not_op = NOT()
         int2char = INT2CHAR()
         stri2int = STRI2INT()
+        concat = CONCAT()
+        strlen = STRLEN()
+        getchar = GETCHAR()
+        setchar = SETCHAR()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -119,5 +123,13 @@ class Interpret:
                     int2char.accept(interpreter, instruction, self)
                 case "STRI2INT":
                     stri2int.accept(interpreter, instruction, self)
+                case "CONCAT":
+                    concat.accept(interpreter, instruction, self)
+                case "STRLEN":
+                    strlen.accept(interpreter, instruction, self)
+                case "GETCHAR":
+                    getchar.accept(interpreter, instruction, self)
+                case "SETCHAR":
+                    setchar.accept(interpreter, instruction, self)
                 
 

@@ -47,6 +47,22 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_STRI2INT(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_CONCAT(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_STRLEN(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_GETCHAR(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_SETCHAR(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         frame, name = parseFrameAndName(instruction.find('arg1').text)
@@ -85,6 +101,8 @@ class Interpreter(Visitor):
                 type_of_var = Type.INT
             case "string":
                 value = instruction.find('arg2').text
+                if (value == None):
+                    value = ""
                 type_of_var = Type.STRING
             case "nil":
                 value = None
@@ -128,7 +146,7 @@ class Interpreter(Visitor):
             print("Zasobnik lokalnich ramcu je prazdny, POPFRAME nelze provest", file=sys.stderr)
             exit(55)
 
-    def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret, operation):
+    def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret):
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
         type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
@@ -141,19 +159,21 @@ class Interpreter(Visitor):
             if (checkExistingVar(frame, name, interpret) == False):
                 print("Dana promenna neexistuje", file=sys.stderr)
                 exit(54)
-            #TODO: udelat podporu edgecasu, napr int@+12
-            match operation:
-                case "ADD":
-                    interpret.frames[frame][name]["value"] = int(value_arg2) + int(value_arg3)
-                case "SUB":
-                    interpret.frames[frame][name]["value"] = int(value_arg2) - int(value_arg3)
-                case "MUL":
-                    interpret.frames[frame][name]["value"] = int(value_arg2) * int(value_arg3)
-                case "IDIV":
-                    if (int(value_arg3) == 0):
-                        print("Deleni nulou", file=sys.stderr)
-                        exit(57)
-                    interpret.frames[frame][name]["value"] = int(value_arg2) // int(value_arg3)
+            #TODO: zjistit, jestli je podpora vsech moznych zapisu int
+            if (isinstance(element, ADD)):
+                interpret.frames[frame][name]["value"] = int(value_arg2) + int(value_arg3)
+
+            elif(isinstance(element, SUB)):
+                interpret.frames[frame][name]["value"] = int(value_arg2) - int(value_arg3)
+
+            elif(isinstance(element, MUL)):
+                interpret.frames[frame][name]["value"] = int(value_arg2) * int(value_arg3)
+
+            elif(isinstance(element, IDIV)):
+                if (int(value_arg3) == 0):
+                    print("Deleni nulou", file=sys.stderr)
+                    exit(57)
+                interpret.frames[frame][name]["value"] = int(value_arg2) // int(value_arg3)
 
             interpret.frames[frame][name]["type"] = Type.INT
 
@@ -172,47 +192,24 @@ class Interpreter(Visitor):
         else:
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
-            if ((type_arg2 == type_arg3) & (type_arg2 != False) & (type_arg3 != False)):
-                match operation:
-                    case "LT":
-                        if (value_arg2 < value_arg3):
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
-                        else:
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
-                    case "GT":
-                        if (value_arg2 > value_arg3):
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
-                        else:
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
-                    case "EQ":
-                        if (value_arg2 == value_arg3):
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
-                        else:
-                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
-                    case "AND":
-                        if (type_arg2 == Type.BOOL):
-                            if (value_arg2 == "true" and value_arg3 == "true"):
-                                interpret.frames[frame_arg1][name_arg1]["value"] = "true"
-                            else:
-                                interpret.frames[frame_arg1][name_arg1]["value"] = "false"     
-                        else:
-                            print("Spatny typ operandu", file=sys.stderr)
-                            exit(53)
-                    case "OR":
-                        if (type_arg2 == Type.BOOL):
-                            if (value_arg2 == "true" or value_arg3 == "true"):
-                                interpret.frames[frame_arg1][name_arg1]["value"] = "true"
-                            else:
-                                interpret.frames[frame_arg1][name_arg1]["value"] = "false" 
-                        else:
-                            print("Spatny typ operandu", file=sys.stderr)
-                            exit(53)
+            if ((type_arg2 == type_arg3) and (type_arg2 != False) and (type_arg3 != False)):
+                if ((isinstance(element, AND) or isinstance(element, OR)) and (type_arg2 != Type.BOOL)):
+                    print("Spatny typ operandu", file=sys.stderr)
+                    exit(53)
+                if ((isinstance(element, LT) and (value_arg2 < value_arg3)) or
+                    (isinstance(element, GT) and (value_arg2 > value_arg3)) or
+                    (isinstance(element, EQ) and (value_arg2 == value_arg3)) or
+                    (isinstance(element, AND) and (value_arg2 == "true") and (value_arg3 == "true")) or
+                    (isinstance(element, OR) and ((value_arg2 == "true") or (value_arg3 == "true")))):
+                        interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                else:
+                    interpret.frames[frame_arg1][name_arg1]["value"] = "false"
 
                 interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
             else:
-                print("Nekompatibilni typy v porovnani", file=sys.stderr)
+                print("Spatny typ operandu", file=sys.stderr)
                 exit(53)
-
+                
     def visit_NOT(self, element : NOT, instruction, interpret):
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -273,9 +270,107 @@ class Interpreter(Visitor):
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
             if ((type_arg2 == Type.STRING) & (type_arg3 == Type.INT)):
+                value_arg3 = int(value_arg3)
                 if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):
                     interpret.frames[frame_arg1][name_arg1]["value"] = ord(value_arg2[value_arg3])
                     interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
                 else:
                     print("Chybna prace s retezcem", file=sys.stderr)
                     exit(58)
+
+    def visit_CONCAT(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if ((type_arg2 == Type.STRING) and (type_arg3 == Type.STRING)):
+                interpret.frames[frame_arg1][name_arg1]["value"] = value_arg2 + value_arg3
+                interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
+
+    def visit_STRLEN(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            if (type_arg2 == Type.STRING):
+                interpret.frames[frame_arg1][name_arg1]["value"] = len(value_arg2)
+                interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
+
+    def visit_GETCHAR(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if (type_arg2 == Type.STRING and type_arg3 == Type.INT):
+                value_arg3 = int(value_arg3)
+                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = value_arg2[value_arg3]
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+                else:
+                    print("Chybna prace s retezcem", file=sys.stderr)
+                    exit(58)
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
+
+    def visit_SETCHAR(self, element, instruction, interpret):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if ((type_arg1 == Type.STRING) and (type_arg2 == Type.INT) and (type_arg3 == Type.STRING)):
+                value_arg2 = int(value_arg2)
+                if ((value_arg2 >= 0) and (value_arg2 <= len(value_arg1)-1) and (len(value_arg3) >= 1)):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = value_arg1[:value_arg2] + value_arg3[0] + value_arg1[value_arg2+1:]
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+                else:
+                    print("Chybna prace s retezcem", file=sys.stderr)
+                    exit(58)
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)

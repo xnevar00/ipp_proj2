@@ -33,19 +33,19 @@ class POPFRAME(Operation):
 
 class ADD(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "ADD")
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret)
 
 class SUB(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "SUB")
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret)
 
 class MUL(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "MUL")
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret)
 
 class IDIV(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "IDIV")
+        visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret)
 
 class LT(Operation):
     def accept(self, visitor, instruction, interpret):
@@ -78,3 +78,19 @@ class INT2CHAR(Operation):
 class STRI2INT(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_STRI2INT(self, instruction, interpret)
+
+class CONCAT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_CONCAT(self, instruction, interpret)
+
+class STRLEN(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_STRLEN(self, instruction, interpret)
+
+class GETCHAR(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_GETCHAR(self, instruction, interpret)
+
+class SETCHAR(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_SETCHAR(self, instruction, interpret)
