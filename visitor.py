@@ -51,11 +51,11 @@ class Interpreter(Visitor):
             if (checkExistingVar(frame, name, interpret) == False):
                 match frame:
                     case "GF":
-                        interpret.frames["GF"][name] = {"value" : None, "type" : UNDEFINEDTYPE}
+                        interpret.frames["GF"][name] = {"value" : None, "type" : Type.UNDEFINED}
                     case "LF":
-                        interpret.frames["LF"][name] = {"value" : None, "type" : UNDEFINEDTYPE}
+                        interpret.frames["LF"][name] = {"value" : None, "type" : Type.UNDEFINED}
                     case "TF":
-                        interpret.frames["TF"][name] = {"value" : None, "type" : UNDEFINEDTYPE}
+                        interpret.frames["TF"][name] = {"value" : None, "type" : Type.UNDEFINED}
             else:
                 print("Pokus o definovani jiz existujici promenne", file=sys.stderr)
                 exit(52)
@@ -66,6 +66,12 @@ class Interpreter(Visitor):
     def visit_MOVE(self, element : MOVE, instruction, interpret):
         destination = instruction.find('arg1').text
         frame, name = parseFrameAndName(instruction.find('arg1').text)
+        if (checkExistingFrame(frame, interpret) == False):
+            print("Ramec neexistuje", file=sys.stderr)
+            exit(55)
+        if (checkExistingVar(frame, name, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
 
         type = instruction.find('arg2').attrib['type']
         value = instruction.find('arg2').text
@@ -85,6 +91,12 @@ class Interpreter(Visitor):
                 type_of_var = Type.BOOL
             case _:
                 srcframe, srcname = parseFrameAndName(instruction.find('arg2').text)
+                if (checkExistingFrame(srcframe, interpret) == False):
+                    print("Ramec neexistuje", file=sys.stderr)
+                    exit(55)
+                if (checkExistingVar(srcframe, srcname, interpret) == False):
+                    print("Promenna neexistuje", file=sys.stderr)
+                    exit(54)
                 value = interpret.frames[srcframe][srcname]["value"]
                 type_of_var = interpret.frames[srcframe][srcname]["type"]
         interpret.frames[frame][name]["value"] = value

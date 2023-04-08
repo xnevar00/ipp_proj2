@@ -9,7 +9,6 @@ class Type(Enum):
     NIL = 4
 
 UNDEFINEDSTACK = -1
-UNDEFINEDTYPE  = -2
 
 def parseFrameAndName(arg):
     var_name_parts = arg.split('@')
@@ -27,6 +26,7 @@ def handleArgument(instruction, interpret):
                     print("Dany ramec neexistuje", file=sys.stderr)
                     exit(55)
                 if (checkExistingVar(frame, name, interpret) == True):
+                    checkInitializedVar(interpret.frames[frame][name])
                     match frame:
                         case "GF":
                             value = interpret.frames["GF"][name]["value"]
@@ -125,5 +125,8 @@ def checkSymbTypeAndValue(arg, interpret):
         else: 
             return False, -1
         
-
+def checkInitializedVar(var):
+    if (var["type"] == Type.UNDEFINED):
+        print("Chybejici hodnota", file=sys.stderr)
+        exit(56)
 
