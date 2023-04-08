@@ -68,6 +68,9 @@ class Interpret:
         sub = SUB()
         mul = MUL()
         idiv = IDIV()
+        lt = LT()
+        gt = GT()
+        eq = EQ()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -95,4 +98,11 @@ class Interpret:
                     mul.accept(interpreter, instruction, self)
                 case "IDIV":
                     idiv.accept(interpreter, instruction, self)
+                case "LT":
+                    lt.accept(interpreter, instruction, self)
+                case "GT":
+                    gt.accept(interpreter, instruction, self)
+                case "EQ":
+                    eq.accept(interpreter, instruction, self)
+                
 

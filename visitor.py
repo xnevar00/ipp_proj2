@@ -31,6 +31,19 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_LT_GT_EQ(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_LT_GT_EQ(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_LT_GT_EQ(self, element, instruction, interpret):
+        pass
+
+
 class Interpreter(Visitor):
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         frame, name = parseFrameAndName(instruction.find('arg1').text)
@@ -67,6 +80,9 @@ class Interpreter(Visitor):
             case "nil":
                 value = None
                 type_of_var = Type.NIL
+            case "bool":
+                value = instruction.find('arg2').text
+                type_of_var = Type.BOOL
             case _:
                 srcframe, srcname = parseFrameAndName(instruction.find('arg2').text)
                 value = interpret.frames[srcframe][srcname]["value"]
@@ -100,9 +116,9 @@ class Interpreter(Visitor):
     def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret, operation):
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
-        is_symb_arg2, value_arg2 = checkSymbTypeAndValue(arg2, Type.INT, interpret)
-        is_symb_arg3, value_arg3 = checkSymbTypeAndValue(arg3, Type.INT, interpret)
-        if (is_symb_arg2 == True & is_symb_arg3 == True):
+        type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+        type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+        if ((type_arg2 == Type.INT) and (type_arg3 == Type.INT)):
             frame, name = parseFrameAndName(instruction.find('arg1').text)
             if (checkExistingFrame(frame, interpret) == False):
                 print("Dany ramec neexistuje", file=sys.stderr)
@@ -125,22 +141,43 @@ class Interpreter(Visitor):
                     interpret.frames[frame][name]["value"] = int(value_arg2) // int(value_arg3)
 
             interpret.frames[frame][name]["type"] = Type.INT
-        return
 
-    #def visit_SUB(self, element: ADD, instruction, interpret):
-     #   arg2 = instruction.find('arg2')
-      #  arg3 = instruction.find('arg3')
-       # is_symb_arg2, value_arg2 = checkSymbTypeAndValue(arg2, Type.INT, interpret)
-        #is_symb_arg3, value_arg3 = checkSymbTypeAndValue(arg3, Type.INT, interpret)
-        #if (is_symb_arg2 == True & is_symb_arg3 == True):
-         #   frame, name = parseFrameAndName(instruction.find('arg1').text)
-          #  if (checkExistingFrame(frame, interpret) == False):
-           #     print("Dany ramec neexistuje", file=sys.stderr)
-            #    exit(55)
-            #if (checkExistingVar(frame, name, interpret) == False):
-             #   print("Dana promenna neexistuje", file=sys.stderr)
-              #  exit(54)
-            #TODO: udelat podporu edgecasu, napr int@+12
-            #interpret.frames[frame][name]["value"] = int(value_arg2) - int(value_arg3)
-            #interpret.frames[frame][name]["type"] = Type.INT
-        #return
+    def visit_LT_GT_EQ(self, element: LT, instruction, interpret, operation):
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if ((type_arg2 == type_arg3) & (type_arg2 != False) & (type_arg3 != False)):
+                match operation:
+                    case "LT":
+                        if (value_arg2 < value_arg3):
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                        else:
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+                    case "GT":
+                        if (value_arg2 > value_arg3):
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                        else:
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+                    case "EQ":
+                        if (value_arg2 == value_arg3):
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "true"
+                        else:
+                            interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+
+                interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
+            else:
+                print("Nekompatibilni typy v porovnani", file=sys.stderr)
+                exit(53)
+
+

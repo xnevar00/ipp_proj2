@@ -46,3 +46,15 @@ class MUL(Operation):
 class IDIV(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_ADD_SUB_MUL_IDIV(self, instruction, interpret, "IDIV")
+
+class LT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LT_GT_EQ(self, instruction, interpret, "LT")
+
+class GT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LT_GT_EQ(self, instruction, interpret, "GT")
+
+class EQ(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LT_GT_EQ(self, instruction, interpret, "EQ")

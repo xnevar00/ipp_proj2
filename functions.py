@@ -55,25 +55,18 @@ def checkExistingFrame(frame, interpret):
     else:
         return True
 
-def checkType(var, type):
-    match type:
-        case "int":
-            if (var["type"] == Type.INT):
-                return True
-        case "bool":
-            if (var["type"] == Type.BOOL):
-                return True
-        case "string":
-            if (var["type"] == Type.STRING):
-                return True
-        case "nil":
-            if (var["type"] == Type.NIL):
-                return True
-        case "undefined":
-            if (var["type"] == Type.UNDEFINED):
-                return True
-    return False
+def getTypeOfVar(frame, var, interpreter):
+    if (checkExistingFrame(frame, interpreter)):
+        if (checkExistingVar(frame, var, interpreter)):
+            return interpreter.frames[frame][var]["type"]
+        else:
+            print("Neexistujici promenna", file=sys.stderr)
+            exit(54)
+    else:
+        print("Neexistujici ramec", file=sys.stderr)
+        exit(55)
 
+#pro vyhodnoceni, zda argument v instrukci je promenna nebo konstanta
 def isVar(type, name, interpret):
     match type:
         case "var":
@@ -115,25 +108,22 @@ def getValue(frame, name, interpreter):
         exit(55)
 
 # kontroluje, zda zadany argument je bud existujici promenna v existujicim ramci, nebo konstanta.
-# vraci bool a hodnotu. Volajici si musi hodnotu sam pretypovat pokud s ni chce pracovat!
-def checkSymbTypeAndValue(arg, type, interpret):
-    is_var2, type2 = isVar(arg.attrib['type'], arg.text, interpret)
+# vraci jeji typ a hodnotu. Volajici si musi hodnotu sam pretypovat pokud s ni chce pracovat!
+def checkSymbTypeAndValue(arg, interpret):
+    is_var, type = isVar(arg.attrib['type'], arg.text, interpret)
 
-    if (is_var2 == True):
-        if (type2 != type):
-            print("Spatne typy operandu", file=sys.stderr)
-            exit(53)
-        else:
-            frame, name = parseFrameAndName(arg.text)
-            return True, interpret.frames[frame][name]["value"]
+    if (is_var == True):
+        frame, name = parseFrameAndName(arg.text)
+        if (interpret.frames[frame][name]["type"] == Type.UNDEFINED):
+            print("Chybejici hodnota", file=sys.stderr)
+            exit(56)
+        return type, interpret.frames[frame][name]["value"]
     else:
-        is_const2, type2 = isConst(arg.attrib['type'])
-        if (is_const2 == True):
-            if ( type2 != type):
-                print("Spatne typy operandu", file=sys.stderr)
-                exit(53)
-            else:
-                return True, arg.text
+        is_const, type = isConst(arg.attrib['type'])
+        if (is_const == True):
+                return type, arg.text
         else: 
             return False, -1
+        
+
 
