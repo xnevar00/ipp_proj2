@@ -87,6 +87,14 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_BREAK(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_LABEL(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_JUMP(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def __init__(self):
         self.op_counter = 0
@@ -540,3 +548,11 @@ class Interpreter(Visitor):
         self.op_counter += 1
         printFrames(interpret, instruction.get('order'), self.total_exec_op_cnt)
         self.total_exec_op_cnt += 1
+
+    def visit_LABEL(self, element, instruction, interpret):
+        self.op_counter += 1
+        self.total_exec_op_cnt += 1
+
+    def visit_JUMP(self, element, instruction, interpret):
+        self.total_exec_op_cnt += 1
+        self.op_counter = interpret.labels[ instruction.find('arg1').text]

@@ -11,6 +11,7 @@ class Interpret:
         self.args = self.parser.parse_args()
         self.frames, self.LFstack = self.initializeFrames()
         self.data_stack = self.initializeDataStack()
+        self.labels = {}
 
     def printHelp(self):
         print("Napoveda k programu interpret.py:\n")
@@ -68,7 +69,13 @@ class Interpret:
             instrukce.append(data)
 
         # Seřazení seznamu podle order atributu
+        self.labels = {}
         instrukce = sorted(instrukce, key=lambda x: x["order"])
+        operation_count = 0
+        for instr in instrukce:
+            if (instr.get('instruction').get('opcode') == "LABEL"):
+                self.labels[instr.get('instruction').find('arg1').text] = operation_count
+            operation_count += 1
 
         #initialization of operation classes
         defvar = DEFVAR()
@@ -99,6 +106,8 @@ class Interpret:
         pushs = PUSHS()
         pops = POPS()
         break_op = BREAK()
+        label = LABEL()
+        jump = JUMP()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -163,4 +172,9 @@ class Interpret:
                     pops.accept(interpreter, instruction, self)
                 case "BREAK":
                     break_op.accept(interpreter, instruction, self)
+                case "LABEL":
+                    label.accept(interpreter, instruction, self)
+                case "JUMP":
+                    jump.accept(interpreter, instruction, self)
+
 

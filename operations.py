@@ -118,3 +118,11 @@ class POPS(Operation):
 class BREAK(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_BREAK(self, instruction, interpret)
+    
+class LABEL(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_LABEL(self, instruction, interpret)
+
+class JUMP(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_JUMP(self, instruction, interpret)
