@@ -126,3 +126,7 @@ class LABEL(Operation):
 class JUMP(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_JUMP(self, instruction, interpret)
+
+class JUMPIFEQ(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_JUMPIFEQ(self, instruction, interpret)

@@ -95,6 +95,10 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_JUMP(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_JUMPIFEQ(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def __init__(self):
         self.op_counter = 0
@@ -555,4 +559,33 @@ class Interpreter(Visitor):
 
     def visit_JUMP(self, element, instruction, interpret):
         self.total_exec_op_cnt += 1
-        self.op_counter = interpret.labels[ instruction.find('arg1').text]
+        if instruction.find('arg1').text in interpret.labels:
+            self.op_counter = interpret.labels[instruction.find('arg1').text]
+        else:
+            print("Pouziti nedefinovaneho navesti", file=sys.stderr)
+            exit(52)
+
+    def visit_JUMPIFEQ (self, element, instruction, interpret):
+        self.total_exec_op_cnt += 1
+
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        arg3 = instruction.find('arg3')
+        if instruction.find('arg1').text not in interpret.labels:
+            print("Pouziti nedefinovaneho navesti", file=sys.stderr)
+            exit(52)
+        else:
+            type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
+            type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if (((type_arg2 == type_arg3) and (type_arg2 != False) and (type_arg3 != False)) or (type_arg2 ==Type.NIL) or (type_arg3 == Type.NIL)):
+                if (type_arg2 == Type.INT):
+                    value_arg2 = int(value_arg2)
+                if (type_arg3 == Type.INT):
+                    value_arg3 = int(value_arg3)
+                if (value_arg2 == value_arg3):
+                    self.op_counter = interpret.labels[instruction.find('arg1').text]
+                else:
+                    self.op_counter += 1
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
