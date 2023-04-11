@@ -83,12 +83,18 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_POPS(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_BREAK(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def __init__(self):
         self.op_counter = 0
+        self.total_exec_op_cnt = 0
 
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         frame, name = parseFrameAndName(instruction.find('arg1').text)
         if (checkExistingFrame(frame, interpret) == True):
@@ -109,6 +115,7 @@ class Interpreter(Visitor):
 
     def visit_MOVE(self, element : MOVE, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         destination = instruction.find('arg1').text
         frame, name = parseFrameAndName(instruction.find('arg1').text)
@@ -152,6 +159,7 @@ class Interpreter(Visitor):
     
     def visit_WRITE_DPRINT(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         value = handleArgument(instruction, interpret)
         if (type(value) == str):
@@ -164,11 +172,13 @@ class Interpreter(Visitor):
     
     def visit_CREATEFRAME(self, element : CREATEFRAME, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         interpret.frames["TF"] = {}
 
     def visit_PUSHFRAME(self, element : PUSHFRAME, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         interpret.LFstack.append(interpret.frames["LF"])
         interpret.frames["LF"] = interpret.frames["TF"]
@@ -176,6 +186,7 @@ class Interpreter(Visitor):
 
     def visit_POPFRAME(self, element : POPFRAME, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         if (checkExistingFrame("LF", interpret) == True):
             interpret.frames["TF"] = interpret.frames["LF"]
@@ -190,6 +201,7 @@ class Interpreter(Visitor):
 
     def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -223,6 +235,7 @@ class Interpreter(Visitor):
 
     def visit_LT_GT_EQ_AND_OR(self, element, instruction, interpret, operation):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -258,6 +271,7 @@ class Interpreter(Visitor):
                 
     def visit_NOT(self, element : NOT, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -283,6 +297,7 @@ class Interpreter(Visitor):
 
     def visit_INT2CHAR(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -306,6 +321,7 @@ class Interpreter(Visitor):
 
     def visit_STRI2INT(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -332,6 +348,7 @@ class Interpreter(Visitor):
 
     def visit_CONCAT(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -356,6 +373,7 @@ class Interpreter(Visitor):
 
     def visit_STRLEN(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -378,6 +396,7 @@ class Interpreter(Visitor):
 
     def visit_GETCHAR(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -407,6 +426,7 @@ class Interpreter(Visitor):
 
     def visit_SETCHAR(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -437,6 +457,7 @@ class Interpreter(Visitor):
 
     def visit_EXIT(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
@@ -451,6 +472,7 @@ class Interpreter(Visitor):
         
     def visit_TYPE(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
@@ -487,15 +509,16 @@ class Interpreter(Visitor):
 
     def visit_PUSHS(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
 
         interpret.data_stack.append({"value" : value_arg1, "type" : type_arg1})
-        print(interpret.data_stack)
 
     def visit_POPS(self, element, instruction, interpret):
         self.op_counter += 1
+        self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
         frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
@@ -512,4 +535,8 @@ class Interpreter(Visitor):
         else:
             print("Datovy zasobnik je prazdny", file=sys.stderr)
             exit(56)
-        print(interpret.data_stack)
+
+    def visit_BREAK(self, element, instruction, interpret):
+        self.op_counter += 1
+        printFrames(interpret, instruction.get('order'), self.total_exec_op_cnt)
+        self.total_exec_op_cnt += 1

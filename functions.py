@@ -132,3 +132,41 @@ def checkInitializedVar(var):
         print("Chybejici hodnota", file=sys.stderr)
         exit(56)
 
+def typeToString(type):
+    match type:
+        case Type.INT:
+            return "int"
+        case Type.STRING:
+            return "string"
+        case Type.BOOL:
+            return "bool"
+        case Type.NIL:
+            return "nil"
+        case Type.UNDEFINED:
+            return "***"
+    
+def printFrame(frame, interpret):
+    print("*************   "+ frame +"   **************")
+    if (checkExistingFrame(frame, interpret) == False):
+        print("          *doesn't exist*")
+    else:
+        print("{:<15}{:<15}{}".format("NAME", "TYPE", "VALUE"))
+        print("")
+        for var in interpret.frames[frame]:
+            type = typeToString(interpret.frames[frame][var]["type"])
+            if (type == "***"):
+                value = "***"
+            else:
+                value = interpret.frames[frame][var]["value"]
+            print("{:<15}{:<15}{}".format(var, type, value))
+
+def printFrames(interpret, opcode_num, total_exec_op_count):
+    print("Pozice v kodu: operace c. " + opcode_num)
+    print("Pocet provedenych operaci: " + str(total_exec_op_count))
+
+    printFrame("GF", interpret)
+    print("\n")
+    printFrame("LF", interpret)
+    print("\n")
+    printFrame("TF", interpret)
+    

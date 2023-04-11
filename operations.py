@@ -114,3 +114,7 @@ class PUSHS(Operation):
 class POPS(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_POPS(self, instruction, interpret)
+
+class BREAK(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_BREAK(self, instruction, interpret)

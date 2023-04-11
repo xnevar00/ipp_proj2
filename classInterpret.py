@@ -98,6 +98,7 @@ class Interpret:
         dprint = DPRINT()
         pushs = PUSHS()
         pops = POPS()
+        break_op = BREAK()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -160,4 +161,6 @@ class Interpret:
                     pushs.accept(interpreter, instruction, self)
                 case "POPS":
                     pops.accept(interpreter, instruction, self)
+                case "BREAK":
+                    break_op.accept(interpreter, instruction, self)
 
