@@ -1,8 +1,12 @@
 import sys
 import abc
 from operations import *
+import re
 
 class Visitor(metaclass=abc.ABCMeta):
+
+
+
     @abc.abstractmethod
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         pass
@@ -12,7 +16,7 @@ class Visitor(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def visit_WRITE(self, element : WRITE, instruction, interpret):
+    def visit_WRITE_DPRINT(self, element : WRITE, instruction, interpret):
         pass
 
     @abc.abstractmethod
@@ -67,8 +71,25 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_EXIT(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_TYPE(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_PUSHS(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_POPS(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
+    def __init__(self):
+        self.op_counter = 0
+
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
+        self.op_counter += 1
+
         frame, name = parseFrameAndName(instruction.find('arg1').text)
         if (checkExistingFrame(frame, interpret) == True):
             if (checkExistingVar(frame, name, interpret) == False):
@@ -87,6 +108,8 @@ class Interpreter(Visitor):
             exit(55)
 
     def visit_MOVE(self, element : MOVE, instruction, interpret):
+        self.op_counter += 1
+
         destination = instruction.find('arg1').text
         frame, name = parseFrameAndName(instruction.find('arg1').text)
         if (checkExistingFrame(frame, interpret) == False):
@@ -127,19 +150,33 @@ class Interpreter(Visitor):
         interpret.frames[frame][name]["value"] = value
         interpret.frames[frame][name]["type"] = type_of_var
     
-    def visit_WRITE(self, element : WRITE, instruction, interpret):
+    def visit_WRITE_DPRINT(self, element, instruction, interpret):
+        self.op_counter += 1
+
         value = handleArgument(instruction, interpret)
-        print(value, end='')
+        if (type(value) == str):
+            value = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), value)
+
+        if (isinstance(element, WRITE)):
+            print(value, end='')
+        elif (isinstance(element, DPRINT)):
+            print(value, file=sys.stderr, end='')
     
     def visit_CREATEFRAME(self, element : CREATEFRAME, instruction, interpret):
+        self.op_counter += 1
+
         interpret.frames["TF"] = {}
 
     def visit_PUSHFRAME(self, element : PUSHFRAME, instruction, interpret):
+        self.op_counter += 1
+
         interpret.LFstack.append(interpret.frames["LF"])
         interpret.frames["LF"] = interpret.frames["TF"]
         interpret.frames["TF"] = UNDEFINEDSTACK
 
     def visit_POPFRAME(self, element : POPFRAME, instruction, interpret):
+        self.op_counter += 1
+
         if (checkExistingFrame("LF", interpret) == True):
             interpret.frames["TF"] = interpret.frames["LF"]
             if (len(interpret.LFstack) != 0):
@@ -150,7 +187,10 @@ class Interpreter(Visitor):
             print("Zasobnik lokalnich ramcu je prazdny, POPFRAME nelze provest", file=sys.stderr)
             exit(55)
 
+
     def visit_ADD_SUB_MUL_IDIV(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
         type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
@@ -182,6 +222,8 @@ class Interpreter(Visitor):
             interpret.frames[frame][name]["type"] = Type.INT
 
     def visit_LT_GT_EQ_AND_OR(self, element, instruction, interpret, operation):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -215,6 +257,8 @@ class Interpreter(Visitor):
                 exit(53)
                 
     def visit_NOT(self, element : NOT, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
@@ -238,6 +282,8 @@ class Interpreter(Visitor):
                 exit(53)
 
     def visit_INT2CHAR(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
@@ -259,6 +305,8 @@ class Interpreter(Visitor):
                 exit(58)
 
     def visit_STRI2INT(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -283,6 +331,8 @@ class Interpreter(Visitor):
                     exit(58)
 
     def visit_CONCAT(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -305,6 +355,8 @@ class Interpreter(Visitor):
                 exit(53)
 
     def visit_STRLEN(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
@@ -325,6 +377,8 @@ class Interpreter(Visitor):
                 exit(53)
 
     def visit_GETCHAR(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -352,6 +406,8 @@ class Interpreter(Visitor):
                 exit(53)
 
     def visit_SETCHAR(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         arg2 = instruction.find('arg2')
         arg3 = instruction.find('arg3')
@@ -380,6 +436,8 @@ class Interpreter(Visitor):
                 exit(53)
 
     def visit_EXIT(self, element, instruction, interpret):
+        self.op_counter += 1
+
         arg1 = instruction.find('arg1')
         type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
         if (type_arg1 != Type.INT):
@@ -391,3 +449,67 @@ class Interpreter(Visitor):
         else:
             exit(value_arg1)
         
+    def visit_TYPE(self, element, instruction, interpret):
+        self.op_counter += 1
+
+        arg1 = instruction.find('arg1')
+        arg2 = instruction.find('arg2')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+        else:
+            is_var, type = isVar(arg2.attrib['type'], arg2.text, interpret)
+            if (is_var == True):
+                type_arg2 = type
+            else:
+                is_const, type = isConst(arg2.attrib['type'])
+                if (is_const == True):
+                        type_arg2 = type
+
+        match type_arg2:
+            case Type.UNDEFINED:
+                interpret.frames[frame_arg1][name_arg1]["value"] = ""
+            case Type.INT:
+                interpret.frames[frame_arg1][name_arg1]["value"] = "int"
+            case Type.STRING:
+                interpret.frames[frame_arg1][name_arg1]["value"] = "string"
+            case Type.BOOL:
+                interpret.frames[frame_arg1][name_arg1]["value"] = "bool"
+            case Type.NIL:
+                interpret.frames[frame_arg1][name_arg1]["value"] = "nil"
+
+        interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+
+    def visit_PUSHS(self, element, instruction, interpret):
+        self.op_counter += 1
+
+        arg1 = instruction.find('arg1')
+        type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
+
+        interpret.data_stack.append({"value" : value_arg1, "type" : type_arg1})
+        print(interpret.data_stack)
+
+    def visit_POPS(self, element, instruction, interpret):
+        self.op_counter += 1
+
+        arg1 = instruction.find('arg1')
+        frame_arg1, name_arg1 = parseFrameAndName(arg1.text)
+
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+
+        if (len(interpret.data_stack) != 0):
+                interpret.frames[frame_arg1][name_arg1] = interpret.data_stack.pop()
+        else:
+            print("Datovy zasobnik je prazdny", file=sys.stderr)
+            exit(56)
+        print(interpret.data_stack)

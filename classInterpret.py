@@ -10,6 +10,7 @@ class Interpret:
         self.parser = self.initializeArgumentParser()
         self.args = self.parser.parse_args()
         self.frames, self.LFstack = self.initializeFrames()
+        self.data_stack = self.initializeDataStack()
 
     def printHelp(self):
         print("Napoveda k programu interpret.py:\n")
@@ -31,6 +32,10 @@ class Interpret:
         LFstack = []
         return frames, LFstack
     
+    def initializeDataStack(self):
+        data_stack = []
+        return data_stack
+    
     def interpret(self):
         if (self.args.help):
             if (len(sys.argv) == 2):
@@ -51,11 +56,19 @@ class Interpret:
             root = et.fromstring(xml_string)
 
         # making a dictionary for faster correct order instruction searching
-        instructions_dict = {}
-        for instruction in root.findall('.//instruction[@order]'):
-            order = instruction.get('order')
-            instructions_dict[order] = instruction
+        # Vytvoření seznamu pro instrukce
+        instrukce = []
 
+        # Projdeme všechny instrukce ve stromu
+        for instr in root.findall('.//instruction[@order]'):
+            # Získání atributu order
+            order = instr.get('order')
+            # Přidání názvu operace do seznamu
+            data = {"order": int(order), "instruction": instr}
+            instrukce.append(data)
+
+        # Seřazení seznamu podle order atributu
+        instrukce = sorted(instrukce, key=lambda x: x["order"])
 
         #initialization of operation classes
         defvar = DEFVAR()
@@ -81,11 +94,16 @@ class Interpret:
         getchar = GETCHAR()
         setchar = SETCHAR()
         exit = EXIT()
+        type = TYPE()
+        dprint = DPRINT()
+        pushs = PUSHS()
+        pops = POPS()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
 
-        for order, instruction in instructions_dict.items():
+        while (interpreter.op_counter <= len(instrukce) -1):
+            instruction = instrukce[interpreter.op_counter]["instruction"]
             opcode = instruction.get('opcode')
             match opcode:
                 case "DEFVAR":
@@ -134,4 +152,12 @@ class Interpret:
                     setchar.accept(interpreter, instruction, self)
                 case "EXIT":
                     exit.accept(interpreter, instruction, self)
+                case "TYPE":
+                    type.accept(interpreter, instruction, self)  
+                case "DPRINT":
+                    dprint.accept(interpreter, instruction, self)
+                case "PUSHS":
+                    pushs.accept(interpreter, instruction, self)
+                case "POPS":
+                    pops.accept(interpreter, instruction, self)
 

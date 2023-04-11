@@ -17,7 +17,7 @@ class MOVE(Operation):
 
 class WRITE(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_WRITE(self, instruction, interpret)
+        visitor.visit_WRITE_DPRINT(self, instruction, interpret)
 
 class CREATEFRAME(Operation):
     def accept(self, visitor, instruction, interpret):
@@ -98,3 +98,19 @@ class SETCHAR(Operation):
 class EXIT(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_EXIT(self, instruction, interpret)
+
+class TYPE(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_TYPE(self, instruction, interpret)
+
+class DPRINT(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_WRITE_DPRINT(self, instruction, interpret)
+
+class PUSHS(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_PUSHS(self, instruction, interpret)
+
+class POPS(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_POPS(self, instruction, interpret)
