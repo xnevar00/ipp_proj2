@@ -109,6 +109,7 @@ class Interpret:
         label = LABEL()
         jump = JUMP()
         jumpifeq = JUMPIFEQ()
+        jumpifneq = JUMPIFNEQ()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -179,5 +180,7 @@ class Interpret:
                     jump.accept(interpreter, instruction, self)
                 case "JUMPIFEQ":
                     jumpifeq.accept(interpreter, instruction, self)
+                case "JUMPIFNEQ":
+                    jumpifneq.accept(interpreter, instruction, self)
 
 

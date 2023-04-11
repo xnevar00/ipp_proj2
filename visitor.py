@@ -96,7 +96,7 @@ class Visitor(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def visit_JUMPIFEQ(self, element, instruction, interpret):
+    def visit_JUMPIFEQ_JUMPIFNEQ(self, element, instruction, interpret):
         pass
 
 class Interpreter(Visitor):
@@ -565,7 +565,7 @@ class Interpreter(Visitor):
             print("Pouziti nedefinovaneho navesti", file=sys.stderr)
             exit(52)
 
-    def visit_JUMPIFEQ (self, element, instruction, interpret):
+    def visit_JUMPIFEQ_JUMPIFNEQ(self, element, instruction, interpret):
         self.total_exec_op_cnt += 1
 
         arg1 = instruction.find('arg1')
@@ -582,7 +582,7 @@ class Interpreter(Visitor):
                     value_arg2 = int(value_arg2)
                 if (type_arg3 == Type.INT):
                     value_arg3 = int(value_arg3)
-                if (value_arg2 == value_arg3):
+                if ((isinstance(element, JUMPIFEQ) and (value_arg2 == value_arg3)) or (isinstance(element, JUMPIFNEQ) and (value_arg2 != value_arg3))):
                     self.op_counter = interpret.labels[instruction.find('arg1').text]
                 else:
                     self.op_counter += 1

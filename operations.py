@@ -129,4 +129,8 @@ class JUMP(Operation):
 
 class JUMPIFEQ(Operation):
     def accept(self, visitor, instruction, interpret):
-        visitor.visit_JUMPIFEQ(self, instruction, interpret)
+        visitor.visit_JUMPIFEQ_JUMPIFNEQ(self, instruction, interpret)
+
+class JUMPIFNEQ(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_JUMPIFEQ_JUMPIFNEQ(self, instruction, interpret)
