@@ -17,12 +17,14 @@ class Type(Enum):
 
 UNDEFINEDSTACK = -1
 
+# "GF@a" => "GF", "a"
 def parseFrameAndName(arg):
     var_name_parts = arg.split('@')
     frame = var_name_parts[0]
     name = var_name_parts[1]
     return frame, name
 
+# serves for WRITE operation, returns value to print
 def handleArgument(instruction, interpret):
         type = instruction.find('arg1').attrib['type']
         value = instruction.find('arg1').text
@@ -59,12 +61,14 @@ def handleArgument(instruction, interpret):
                 value = value
         return value
 
+# checks whether the given variable already exists or not
 def checkExistingVar(frame, var, interpret):
     if var in interpret.frames[frame]:
         return True
     else:
         return False
-    
+
+#checks whether the given frame already exists or not and if its not an invalid frame  
 def checkExistingFrame(frame, interpret):
     if (frame != "GF" and frame != "LF" and frame != "TF"):
         print("Neexistujici ramec", file=sys.stderr)
@@ -75,6 +79,7 @@ def checkExistingFrame(frame, interpret):
     else:
         return True
 
+# returns the type of variable
 def getTypeOfVar(frame, var, interpreter):
     if (checkExistingFrame(frame, interpreter)):
         if (checkExistingVar(frame, var, interpreter)):
@@ -86,7 +91,7 @@ def getTypeOfVar(frame, var, interpreter):
         print("Neexistujici ramec", file=sys.stderr)
         exit(55)
 
-#pro vyhodnoceni, zda argument v instrukci je promenna nebo konstanta
+# check whether an instruction argument is a variable or not
 def isVar(type, name, interpret):
     match type:
         case "var":
@@ -102,7 +107,8 @@ def isVar(type, name, interpret):
                 exit(55)
         case _:
             return False, Type.UNDEFINED
-        
+
+# check whether an instructioin argument is a constant or not    
 def isConst(type):
     match type:
         case "nil":
@@ -115,7 +121,8 @@ def isConst(type):
             return True, Type.INT
         case _:
             return False, Type.UNDEFINED
-        
+
+#returns a value of a variable, if it exists        
 def getValue(frame, name, interpreter):
     if (checkExistingFrame(frame) == True):
         if (checkExistingVar(frame, name) == True):
@@ -127,8 +134,8 @@ def getValue(frame, name, interpreter):
         print("Neexistujici ramec", file=sys.stderr)
         exit(55)
 
-# kontroluje, zda zadany argument je bud existujici promenna v existujicim ramci, nebo konstanta.
-# vraci jeji typ a hodnotu. Volajici si musi hodnotu sam pretypovat pokud s ni chce pracovat!
+# check, if the given argument is whether existing var in an aexisting frame or a constant.
+# returns its type and value. The caller must cast the value himself, if he wants to use it!
 def checkSymbTypeAndValue(arg, interpret):
     is_var, type = isVar(arg.attrib['type'], arg.text, interpret)
 
@@ -149,12 +156,13 @@ def checkSymbTypeAndValue(arg, interpret):
         else: 
             return False, -1
         
-#kontroluje, zda byla do promenne vlozena hodnota. Pokud ne, ukonci program s odpovidajici chybou
+# check if there was already inserted value to the variable. If not, the program stops with according error code
 def checkInitializedVar(var):
     if (var["type"] == Type.UNDEFINED):
         print("Chybejici hodnota", file=sys.stderr)
         exit(56)
 
+#serves for debug print (operation BREAK)
 def typeToString(type):
     match type:
         case Type.INT:
@@ -167,7 +175,8 @@ def typeToString(type):
             return "nil"
         case Type.UNDEFINED:
             return "***"
-    
+
+#debug print for operation BREAK    
 def printFrame(frame, interpret):
     print("*************   "+ frame +"   **************")
     if (checkExistingFrame(frame, interpret) == False):
@@ -183,6 +192,7 @@ def printFrame(frame, interpret):
                 value = interpret.frames[frame][var]["value"]
             print("{:<15}{:<15}{}".format(var, type, value))
 
+#debuf print for operation BREAK
 def printFrames(interpret, opcode_num, total_exec_op_count):
     print("Pozice v kodu: operace c. " + opcode_num)
     print("Pocet provedenych operaci: " + str(total_exec_op_count))

@@ -11,8 +11,6 @@ import re
 
 class Visitor(metaclass=abc.ABCMeta):
 
-
-
     @abc.abstractmethod
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         pass
@@ -119,8 +117,8 @@ class Visitor(metaclass=abc.ABCMeta):
 
 class Interpreter(Visitor):
     def __init__(self):
-        self.op_counter = 0
-        self.total_exec_op_cnt = 0
+        self.op_counter = 0         # increments with every operation done, or changes when jumping to labels
+        self.total_exec_op_cnt = 0  # for debug print, only increments
 
     def visit_DEFVAR(self, element : DEFVAR, instruction, interpret):
         self.op_counter += 1
@@ -147,7 +145,6 @@ class Interpreter(Visitor):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
 
-        destination = instruction.find('arg1').text
         frame, name = parseFrameAndName(instruction.find('arg1').text)
         if (checkExistingFrame(frame, interpret) == False):
             print("Ramec neexistuje", file=sys.stderr)
@@ -167,6 +164,7 @@ class Interpreter(Visitor):
                 value = instruction.find('arg2').text
                 if (value == None):
                     value = ""
+                #replacement of escape sequences
                 value = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), value)
                 type_of_var = Type.STRING
             case "nil":
@@ -195,6 +193,7 @@ class Interpreter(Visitor):
 
         value = handleArgument(instruction, interpret)
         if (type(value) == str):
+            #replacement of escape sequences
             value = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), value)
 
         if (isinstance(element, WRITE)):
@@ -205,13 +204,14 @@ class Interpreter(Visitor):
     def visit_CREATEFRAME(self, element : CREATEFRAME, instruction, interpret):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
-
+        #creates a new TF and the old one (if any exists) is overwritten
         interpret.frames["TF"] = {}
 
     def visit_PUSHFRAME(self, element : PUSHFRAME, instruction, interpret):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
 
+        #pushes LF to LFstack and moves TF to LF, TF is deleted
         if (checkExistingFrame("TF", interpret) == True):
             interpret.LFstack.append(interpret.frames["LF"])
             interpret.frames["LF"] = interpret.frames["TF"]
@@ -224,6 +224,7 @@ class Interpreter(Visitor):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
 
+        #moves LF to TF and then pops LFstack to LF
         if (checkExistingFrame("LF", interpret) == True):
             interpret.frames["TF"] = interpret.frames["LF"]
             if (len(interpret.LFstack) != 0):
@@ -251,7 +252,6 @@ class Interpreter(Visitor):
             if (checkExistingVar(frame, name, interpret) == False):
                 print("Dana promenna neexistuje", file=sys.stderr)
                 exit(54)
-            #TODO: zjistit, jestli je podpora vsech moznych zapisu int
             if (isinstance(element, ADD)):
                 interpret.frames[frame][name]["value"] = int(value_arg2) + int(value_arg3)
 
@@ -291,6 +291,7 @@ class Interpreter(Visitor):
         else:
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            # 2 nil values are allowed only with operation EQ
             if ((type_arg2 == Type.NIL or type_arg3 == Type.NIL) and (not isinstance(element, EQ))):
                 print("Spatny typ operandu", file=sys.stderr)
                 exit(53)
@@ -364,7 +365,7 @@ class Interpreter(Visitor):
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
             if (type_arg2 == Type.INT):
                 value_arg2 = (int(value_arg2))
-                if(0 <= value_arg2 <= 0x10FFFF):
+                if(0 <= value_arg2 <= 0x10FFFF):    #value_arg2 is a valid character number
                     char_value_arg2 = chr(value_arg2)
                     interpret.frames[frame_arg1][name_arg1]["value"] = char_value_arg2
                     interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
@@ -395,7 +396,7 @@ class Interpreter(Visitor):
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
             if ((type_arg2 == Type.STRING) & (type_arg3 == Type.INT)):
                 value_arg3 = int(value_arg3)
-                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):
+                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):   #value_arg3 must be a valid index in string value_arg2
                     interpret.frames[frame_arg1][name_arg1]["value"] = ord(value_arg2[value_arg3])
                     interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
                 else:
@@ -474,7 +475,7 @@ class Interpreter(Visitor):
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
             if (type_arg2 == Type.STRING and type_arg3 == Type.INT):
                 value_arg3 = int(value_arg3)
-                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):
+                if ((value_arg3 >= 0) and (value_arg3 <= len(value_arg2)-1)):   #value_arg3 must be a valid index in string value_arg2
                     interpret.frames[frame_arg1][name_arg1]["value"] = value_arg2[value_arg3]
                     interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
                 else:
@@ -505,7 +506,7 @@ class Interpreter(Visitor):
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
             if ((type_arg1 == Type.STRING) and (type_arg2 == Type.INT) and (type_arg3 == Type.STRING)):
                 value_arg2 = int(value_arg2)
-                if ((value_arg2 >= 0) and (value_arg2 <= len(value_arg1)-1) and (len(value_arg3) >= 1)):
+                if ((value_arg2 >= 0) and (value_arg2 <= len(value_arg1)-1) and (len(value_arg3) >= 1)): #value_arg1[value_arg2] = value_arg3[0]
                     interpret.frames[frame_arg1][name_arg1]["value"] = value_arg1[:value_arg2] + value_arg3[0] + value_arg1[value_arg2+1:]
                     interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
                 else:
@@ -525,7 +526,7 @@ class Interpreter(Visitor):
             print("Spatny typ operandu", file=sys.stderr)
             exit(53)
         value_arg1 = int(value_arg1)
-        if ((value_arg1 < 0) or (value_arg1 > 49)):
+        if ((value_arg1 < 0) or (value_arg1 > 49)): #exit code must be a valid number
             print("Spatna hodnota operandu", file=sys.stderr)
             exit(57)
         else:
@@ -574,7 +575,6 @@ class Interpreter(Visitor):
 
         arg1 = instruction.find('arg1')
         type_arg1, value_arg1 = checkSymbTypeAndValue(arg1, interpret)
-
         interpret.data_stack.append({"value" : value_arg1, "type" : type_arg1})
 
     def visit_POPS(self, element, instruction, interpret):
@@ -605,6 +605,7 @@ class Interpreter(Visitor):
     def visit_LABEL(self, element, instruction, interpret):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
+        # nothing else to do here since the labels are already saved in the dictionary Interpret.labels
 
     def visit_JUMP(self, element, instruction, interpret):
         self.total_exec_op_cnt += 1
@@ -657,6 +658,7 @@ class Interpreter(Visitor):
         if (len(interpret.call_stack) != 0):
             self.op_counter = interpret.call_stack.pop()
         else:
+            #there wasnt any call to return from
             print("Zasobnik volani je prazdny", file=sys.stderr)
             exit(56)
 
@@ -693,6 +695,7 @@ class Interpreter(Visitor):
                         interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
                 case "string":
                         match = True
+                        #replacement of escape sequences
                         radek = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), radek)
                         interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
                 case "bool":
@@ -708,7 +711,7 @@ class Interpreter(Visitor):
         except EOFError:
             match = False
 
-        if ((not match)):
+        if ((not match)):   #missing or invalid input
             interpret.frames[frame_arg1][name_arg1]["value"] = ""
             interpret.frames[frame_arg1][name_arg1]["type"] = Type.NIL
         else:

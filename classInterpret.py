@@ -61,7 +61,6 @@ class Interpret:
             self.parser.error('Alespon jeden z parametru --source=file a --input=file je povinny.')
 
         #getting the tree representation of xml file
-
         if (self.args.source):
             try:
                 file = open(self.args.source, "r")
@@ -76,31 +75,34 @@ class Interpret:
                 sys.exit(31)
         else:
             try:
+                # when no source given, it gets data from stdin
                 xml_string = sys.stdin.read()
                 root = et.fromstring(xml_string)
             except et.ParseError:
                 print("Chybny XML format ve vstupnim souboru", file=sys.stderr)
                 sys.exit(31)
 
-        
-        sourceFile = sys.stdin
         if (self.args.input):
             try:
+                # when no input given, it gets data from stdin
                 sys.stdin = open(self.args.input, "r")
             except FileNotFoundError:
                 print("Soubor se nepodarilo otevrit.", file=sys.stderr)
                 sys.exit(11)
-            
-        # Vytvoření seznamu pro instrukce
+    
         xml_checker = XmlChecker()
-        instrukce = []
-        instrukce = XmlChecker.checkXml(xml_checker, root, instrukce)
+        # making a list for instructions
+        instructions = []
+        #getting the xml file representation checked
+        instructions = XmlChecker.checkXml(xml_checker, root, instructions)
 
-        # Seřazení seznamu podle order atributu
         self.labels = {}
-        instrukce = sorted(instrukce, key=lambda x: x["order"])
+        # ordering the list by attribute 'order'
+        instructions = sorted(instructions, key=lambda x: x["order"])
         operation_count = 0
-        for instr in instrukce:
+
+        # loading labels to a dictionary for an easier access in case of jumps in program
+        for instr in instructions:
             if (instr.get('instruction').get('opcode') == "LABEL"):
                 if (instr.get('instruction').find('arg1').text not in self.labels):
                     self.labels[instr.get('instruction').find('arg1').text] = operation_count
@@ -109,7 +111,7 @@ class Interpret:
                     sys.exit(52)
             operation_count += 1
 
-        #initialization of operation classes
+        # initialization of operation classes
         defvar = DEFVAR()
         move = MOVE()
         write = WRITE()
@@ -149,8 +151,8 @@ class Interpret:
         #initialization of visitor interpreter
         interpreter = Interpreter()
 
-        while (interpreter.op_counter <= len(instrukce) -1):
-            instruction = instrukce[interpreter.op_counter]["instruction"]
+        while (interpreter.op_counter <= len(instructions) -1):
+            instruction = instructions[interpreter.op_counter]["instruction"]
             opcode = instruction.get('opcode')
             opcode = opcode.upper()
             match opcode:
