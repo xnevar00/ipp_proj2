@@ -2,6 +2,7 @@ import argparse
 import sys
 import xml.etree.ElementTree as et
 from visitor import *
+from xmlChecker import *
 
 UNDEFINEDSTACK = -1
 
@@ -11,6 +12,7 @@ class Interpret:
         self.args = self.parser.parse_args()
         self.frames, self.LFstack = self.initializeFrames()
         self.data_stack = self.initializeDataStack()
+        self.call_stack = self.initializeCallStack()
         self.labels = {}
 
     def printHelp(self):
@@ -37,36 +39,50 @@ class Interpret:
         data_stack = []
         return data_stack
     
+    def initializeCallStack(self):
+        call_stack = []
+        return call_stack
+    
     def interpret(self):
         if (self.args.help):
             if (len(sys.argv) == 2):
                 self.printHelp()
-                exit()
+                sys.exit()
             else:
                 print("Parametr --help nelze kombinovat s dalsimi parametry", file=sys.stderr)
-                exit(10)
+                sys.exit(10)
         if not (self.args.source or self.args.input):
             self.parser.error('Alespon jeden z parametru --source=file a --input=file je povinny.')
 
         #getting the tree representation of xml file
+
         if (self.args.source):
-            tree = et.parse(self.args.source)
-            root = tree.getroot()
+            try:
+                tree = et.parse(self.args.source)
+                root = tree.getroot()
+            except et.ParseError:
+                print("Chybny XML format ve vstupnim souboru", file=sys.stderr)
+                sys.exit(31)
         else:
-            xml_string = sys.stdin.read()
-            root = et.fromstring(xml_string)
+            try:
+                xml_string = sys.stdin.read()
+                root = et.fromstring(xml_string)
+            except et.ParseError:
+                print("Chybny XML format ve vstupnim souboru", file=sys.stderr)
+                sys.exit(31)
 
-        # making a dictionary for faster correct order instruction searching
+        
+        sourceFile = sys.stdin
+        if (self.args.input):
+            try:
+                sys.stdin = open(self.args.input, "r")
+            except FileNotFoundError:
+                print("Soubor se nepodarilo otevrit.")
+            
         # Vytvoření seznamu pro instrukce
+        xml_checker = XmlChecker()
         instrukce = []
-
-        # Projdeme všechny instrukce ve stromu
-        for instr in root.findall('.//instruction[@order]'):
-            # Získání atributu order
-            order = instr.get('order')
-            # Přidání názvu operace do seznamu
-            data = {"order": int(order), "instruction": instr}
-            instrukce.append(data)
+        instrukce = XmlChecker.checkXml(xml_checker, root, instrukce)
 
         # Seřazení seznamu podle order atributu
         self.labels = {}
@@ -74,7 +90,11 @@ class Interpret:
         operation_count = 0
         for instr in instrukce:
             if (instr.get('instruction').get('opcode') == "LABEL"):
-                self.labels[instr.get('instruction').find('arg1').text] = operation_count
+                if (instr.get('instruction').find('arg1').text not in self.labels):
+                    self.labels[instr.get('instruction').find('arg1').text] = operation_count
+                else:
+                    print("Redefinice promenne", file=sys.stderr)
+                    sys.exit(52)
             operation_count += 1
 
         #initialization of operation classes
@@ -110,6 +130,9 @@ class Interpret:
         jump = JUMP()
         jumpifeq = JUMPIFEQ()
         jumpifneq = JUMPIFNEQ()
+        call = CALL()
+        return_op = RETURN()
+        read = READ()
 
         #initialization of visitor interpreter
         interpreter = Interpreter()
@@ -182,5 +205,12 @@ class Interpret:
                     jumpifeq.accept(interpreter, instruction, self)
                 case "JUMPIFNEQ":
                     jumpifneq.accept(interpreter, instruction, self)
-
+                case "CALL":
+                    call.accept(interpreter, instruction, self)
+                case "RETURN":
+                    return_op.accept(interpreter, instruction, self)
+                case "READ":
+                    read.accept(interpreter, instruction, self)
+                case _:
+                    sys.exit()
 

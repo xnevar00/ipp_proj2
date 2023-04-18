@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+import re
 
 class Type(Enum):
     UNDEFINED = 0
@@ -121,6 +122,9 @@ def checkSymbTypeAndValue(arg, interpret):
         if (is_const == True):
                 if (arg.text == None and type == Type.STRING):
                     return type, ""
+                elif (type == Type.STRING):
+                    value = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), arg.text)
+                    return type, value
                 else:
                     return type, arg.text
         else: 
@@ -169,4 +173,5 @@ def printFrames(interpret, opcode_num, total_exec_op_count):
     printFrame("LF", interpret)
     print("\n")
     printFrame("TF", interpret)
+
     

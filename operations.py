@@ -134,3 +134,15 @@ class JUMPIFEQ(Operation):
 class JUMPIFNEQ(Operation):
     def accept(self, visitor, instruction, interpret):
         visitor.visit_JUMPIFEQ_JUMPIFNEQ(self, instruction, interpret)
+
+class CALL(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_CALL(self, instruction, interpret)
+
+class RETURN(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_RETURN(self, instruction, interpret)
+
+class READ(Operation):
+    def accept(self, visitor, instruction, interpret):
+        visitor.visit_READ(self, instruction, interpret)

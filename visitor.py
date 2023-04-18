@@ -99,6 +99,18 @@ class Visitor(metaclass=abc.ABCMeta):
     def visit_JUMPIFEQ_JUMPIFNEQ(self, element, instruction, interpret):
         pass
 
+    @abc.abstractmethod
+    def visit_CALL(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_RETURN(self, element, instruction, interpret):
+        pass
+
+    @abc.abstractmethod
+    def visit_READ(self, element, instruction, interpret):
+        pass
+
 class Interpreter(Visitor):
     def __init__(self):
         self.op_counter = 0
@@ -149,9 +161,10 @@ class Interpreter(Visitor):
                 value = instruction.find('arg2').text
                 if (value == None):
                     value = ""
+                value = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), value)
                 type_of_var = Type.STRING
             case "nil":
-                value = None
+                value = ""
                 type_of_var = Type.NIL
             case "bool":
                 value = instruction.find('arg2').text
@@ -164,6 +177,7 @@ class Interpreter(Visitor):
                 if (checkExistingVar(srcframe, srcname, interpret) == False):
                     print("Promenna neexistuje", file=sys.stderr)
                     exit(54)
+                checkInitializedVar(interpret.frames[srcframe][srcname])
                 value = interpret.frames[srcframe][srcname]["value"]
                 type_of_var = interpret.frames[srcframe][srcname]["type"]
         interpret.frames[frame][name]["value"] = value
@@ -192,9 +206,13 @@ class Interpreter(Visitor):
         self.op_counter += 1
         self.total_exec_op_cnt += 1
 
-        interpret.LFstack.append(interpret.frames["LF"])
-        interpret.frames["LF"] = interpret.frames["TF"]
-        interpret.frames["TF"] = UNDEFINEDSTACK
+        if (checkExistingFrame("TF", interpret) == True):
+            interpret.LFstack.append(interpret.frames["LF"])
+            interpret.frames["LF"] = interpret.frames["TF"]
+            interpret.frames["TF"] = UNDEFINEDSTACK
+        else:
+            print("Ramec neexistuje", file=sys.stderr)
+            exit(55)
 
     def visit_POPFRAME(self, element : POPFRAME, instruction, interpret):
         self.op_counter += 1
@@ -244,6 +262,10 @@ class Interpreter(Visitor):
                 interpret.frames[frame][name]["value"] = int(value_arg2) // int(value_arg3)
 
             interpret.frames[frame][name]["type"] = Type.INT
+        else:
+            print("Spatne typy operandu", file=sys.stderr)
+            exit(53)
+
 
     def visit_LT_GT_EQ_AND_OR(self, element, instruction, interpret, operation):
         self.op_counter += 1
@@ -263,11 +285,18 @@ class Interpreter(Visitor):
         else:
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
             type_arg3, value_arg3 = checkSymbTypeAndValue(arg3, interpret)
+            if ((type_arg2 == Type.NIL or type_arg3 == Type.NIL) and (not isinstance(element, EQ))):
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
             if ((type_arg2 == type_arg3) and (type_arg2 != False) and (type_arg3 != False)):
                 if ((isinstance(element, AND) or isinstance(element, OR)) and (type_arg2 != Type.BOOL)):
                     print("Spatny typ operandu", file=sys.stderr)
                     exit(53)
-                if ((isinstance(element, LT) and (value_arg2 < value_arg3)) or
+                if (type_arg2 == Type.INT):
+                    value_arg2 = int(value_arg2)
+                    value_arg3 = int(value_arg3)
+                if (((value_arg2 == Type.NIL) and (value_arg3 == Type.NIL)) or
+                    (isinstance(element, LT) and (value_arg2 < value_arg3)) or
                     (isinstance(element, GT) and (value_arg2 > value_arg3)) or
                     (isinstance(element, EQ) and (value_arg2 == value_arg3)) or
                     (isinstance(element, AND) and (value_arg2 == "true") and (value_arg3 == "true")) or
@@ -278,8 +307,12 @@ class Interpreter(Visitor):
 
                 interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
             else:
-                print("Spatny typ operandu", file=sys.stderr)
-                exit(53)
+                if ((type_arg2 == Type.NIL) or (type_arg3 == Type.NIL)):
+                    interpret.frames[frame_arg1][name_arg1]["value"] = "false"
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
+                else:
+                    print("Spatny typ operandu", file=sys.stderr)
+                    exit(53)
                 
     def visit_NOT(self, element : NOT, instruction, interpret):
         self.op_counter += 1
@@ -323,13 +356,18 @@ class Interpreter(Visitor):
             exit(54)
         else:
             type_arg2, value_arg2 = checkSymbTypeAndValue(arg2, interpret)
-            if ((type_arg2 == Type.INT) and (0 <= value_arg2 <= 0x10FFFF)):
-                char_value_arg2 = chr(value_arg2)
-                interpret.frames[frame_arg1][name_arg1]["value"] = char_value_arg2
-                interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+            if (type_arg2 == Type.INT):
+                value_arg2 = (int(value_arg2))
+                if(0 <= value_arg2 <= 0x10FFFF):
+                    char_value_arg2 = chr(value_arg2)
+                    interpret.frames[frame_arg1][name_arg1]["value"] = char_value_arg2
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+                else:
+                    print("Chybna prace s retezcem", file=sys.stderr)
+                    exit(58)
             else:
-                print("Chybna prace s retezcem", file=sys.stderr)
-                exit(58)
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
 
     def visit_STRI2INT(self, element, instruction, interpret):
         self.op_counter += 1
@@ -357,6 +395,10 @@ class Interpreter(Visitor):
                 else:
                     print("Chybna prace s retezcem", file=sys.stderr)
                     exit(58)
+            else:
+                print("Spatny typ operandu", file=sys.stderr)
+                exit(53)
+            
 
     def visit_CONCAT(self, element, instruction, interpret):
         self.op_counter += 1
@@ -476,7 +518,8 @@ class Interpreter(Visitor):
         if (type_arg1 != Type.INT):
             print("Spatny typ operandu", file=sys.stderr)
             exit(53)
-        elif ((value_arg1 < 0) or (value_arg1 > 49)):
+        value_arg1 = int(value_arg1)
+        if ((value_arg1 < 0) or (value_arg1 > 49)):
             print("Spatna hodnota operandu", file=sys.stderr)
             exit(57)
         else:
@@ -589,3 +632,79 @@ class Interpreter(Visitor):
             else:
                 print("Spatny typ operandu", file=sys.stderr)
                 exit(53)
+
+    def visit_CALL(self, element, instruction, interpret):
+        self.op_counter += 1
+        self.total_exec_op_cnt += 1
+
+        interpret.call_stack.append(self.op_counter)
+        if instruction.find('arg1').text not in interpret.labels:
+            print("Pouziti nedefinovaneho navesti", file=sys.stderr)
+            exit(52)
+        else:
+            self.op_counter = interpret.labels[instruction.find('arg1').text]
+
+    def visit_RETURN(self, element, instruction, interpret):
+        self.op_counter += 1
+        self.total_exec_op_cnt += 1
+
+        if (len(interpret.call_stack) != 0):
+            self.op_counter = interpret.call_stack.pop()
+        else:
+            print("Zasobnik volani je prazdny", file=sys.stderr)
+            exit(56)
+
+    def visit_READ(self, element, instruction, interpret):
+        self.op_counter += 1
+        self.total_exec_op_cnt += 1
+
+        radek = ""
+        match = False
+        arg2 = instruction.find('arg2').text
+        if (arg2 != "int" and arg2 != "string" and arg2 != "bool"):
+            print("Spatna hodnota operandu", file=sys.stderr)
+            exit(57)
+
+        arg1 = instruction.find('arg1').text
+        frame_arg1, name_arg1 = parseFrameAndName(arg1)
+        if (checkExistingFrame(frame_arg1, interpret) == False):
+            print("Pristup do nedefinovaneho ramce", file=sys.stderr)
+            exit(55)
+        elif (checkExistingVar(frame_arg1, name_arg1, interpret) == False):
+            print("Promenna neexistuje", file=sys.stderr)
+            exit(54)
+
+        try:
+            radek = input()
+            match arg2:
+                case "int":
+                    try:
+                        int(radek)
+                        match = True
+                    except ValueError:
+                        match = False
+                    if (match):
+                        interpret.frames[frame_arg1][name_arg1]["type"] = Type.INT
+                case "string":
+                        match = True
+                        radek = re.sub(r'\\([0-9]{3})', lambda match : chr(int(match.group(1))), radek)
+                        interpret.frames[frame_arg1][name_arg1]["type"] = Type.STRING
+                case "bool":
+                    match = True
+                    if (radek.lower() == "false" or radek.lower() == "true"):
+                        radek = radek.lower()
+                    else:
+                        radek = "false"
+                    interpret.frames[frame_arg1][name_arg1]["type"] = Type.BOOL
+                case _:
+                    print("Spatna hodnota operandu", file=sys.stderr)
+                    exit(57)
+        except EOFError:
+            match = False
+
+        if ((not match)):
+            interpret.frames[frame_arg1][name_arg1]["value"] = ""
+            interpret.frames[frame_arg1][name_arg1]["type"] = Type.NIL
+        else:
+            interpret.frames[frame_arg1][name_arg1]["value"] = radek
+        
