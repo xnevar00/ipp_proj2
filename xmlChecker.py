@@ -5,8 +5,9 @@
 # file:     xmlChecker.py
 
 import sys
+from singleton import *
 
-class XmlChecker:
+class XmlChecker(metaclass = Singleton):
 
     def __init__(self):
         self.XMLOK = 0
