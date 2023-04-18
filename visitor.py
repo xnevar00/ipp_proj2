@@ -1,3 +1,9 @@
+#           IPP projekt 2
+#
+# author:   Veronika Nevarilova (xnevar00)
+# date:     4/2022
+# file:     visitor.py
+
 import sys
 import abc
 from operations import *

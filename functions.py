@@ -1,3 +1,9 @@
+#           IPP projekt 2
+#
+# author:   Veronika Nevarilova (xnevar00)
+# date:     4/2022
+# file:     functions.py
+
 import sys
 from enum import Enum
 import re
@@ -63,7 +69,7 @@ def checkExistingFrame(frame, interpret):
     if (frame != "GF" and frame != "LF" and frame != "TF"):
         print("Neexistujici ramec", file=sys.stderr)
         exit(52)
-        
+
     if (interpret.frames[frame] == UNDEFINEDSTACK):
         return False
     else:

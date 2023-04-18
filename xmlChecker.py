@@ -1,3 +1,9 @@
+#           IPP projekt 2
+#
+# author:   Veronika Nevarilova (xnevar00)
+# date:     4/2022
+# file:     xmlChecker.py
+
 import sys
 
 class XmlChecker:
@@ -5,17 +11,6 @@ class XmlChecker:
     def __init__(self):
         self.XMLOK = 0
         self.XMLERR = -1
-
-
-    #implementovano:
-    #       kontrola jestli kazda instrukce obsahuje opcode a order
-    #       kontrola jestli neni mezi instrukcema nejaky random bordel
-    #       kontrola, jestli neni nejaky order dvakrat
-    #       kontrola, jestli neni opocode zaporny
-    #       kontrola, jestli je order jen cele cislo >= 1
-    #       odchytavani vyjimek xml parseru, tedy check, zda je xml soubor well formed
-    #       kontrola, jestli je v instrukci spravny pocet argumentu a jestli jde cislovani od 1
-    #       kontrola, zda kazdy atribut instrukce obsahuje 'type'
 
     #kontrola, zda instrukce nemaji nejake atributy navic
     def checkXml(self, root, instruction_list):
