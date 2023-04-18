@@ -30,11 +30,20 @@ def handleArgument(instruction, interpret):
                     checkInitializedVar(interpret.frames[frame][name])
                     match frame:
                         case "GF":
-                            value = interpret.frames["GF"][name]["value"]
+                            if (interpret.frames["GF"][name]["type"] == Type.NIL):
+                                value = ""
+                            else:
+                                value = interpret.frames["GF"][name]["value"]
                         case "LF":
-                            value = interpret.frames["LF"][name]["value"]
+                            if (interpret.frames["LF"][name]["type"] == Type.NIL):
+                                value = ""
+                            else:
+                                value = interpret.frames["LF"][name]["value"]
                         case "TF":
-                            value = interpret.frames["TF"][name]["value"]
+                            if (interpret.frames["TF"][name]["type"] == Type.NIL):
+                                value = ""
+                            else:
+                                value = interpret.frames["TF"][name]["value"]
                 else:
                     print("Dana promenna neexistuje", file=sys.stderr)
                     exit(54)
@@ -51,6 +60,10 @@ def checkExistingVar(frame, var, interpret):
         return False
     
 def checkExistingFrame(frame, interpret):
+    if (frame != "GF" and frame != "LF" and frame != "TF"):
+        print("Neexistujici ramec", file=sys.stderr)
+        exit(52)
+        
     if (interpret.frames[frame] == UNDEFINEDSTACK):
         return False
     else:

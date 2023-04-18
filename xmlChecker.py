@@ -26,6 +26,7 @@ class XmlChecker:
 
             # Získání atributu order
             order = instr.get('order')
+            order = order.strip()
 
             #kontrola, zda je to jen cele kladne cislo
             if (not order.isdigit()):
@@ -39,6 +40,7 @@ class XmlChecker:
                 exit(32)
             
             # Přidání názvu operace do seznamu
+            instr = self.removeSpaces(instr)
             data = {"order": order, "instruction": instr}
             instruction_list.append(data)
 
@@ -70,20 +72,33 @@ class XmlChecker:
         for instr in instruction_list:
             instruction = instr.get('instruction')
             opcode = instruction.get('opcode')
+            opcode = opcode.upper()
             ok = False
 
             match opcode:
                 case "CREATEFRAME" | "PUSHFRAME" | "POPFRAME" | "RETURN" | "BREAK":
                     if ((len(instruction) == 0)):
                         ok = True
-                case "DEFVAR" | "CALL" | "PUSHS" | "POPS" | "WRITE" | "LABEL" | "JUMP" | "EXIT" | "DPRINT":
-                    if ((len(instruction) == 1) and (instruction.find('arg1') is not None) and self.checkExistingTypeInAtribs(instruction)):
+                case "DEFVAR" | "POPS":
+                    if ((len(instruction) == 1) and (instruction.find('arg1') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isVar(instruction.find('arg1'))):
                             ok = True
-                case "MOVE" | "INT2CHAR" | "READ" | "STRLEN" | "TYPE":
-                    if ((len(instruction) == 2) and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and self.checkExistingTypeInAtribs(instruction)):
+                case "CALL" | "LABEL" | "JUMP":
+                    if ((len(instruction) == 1) and (instruction.find('arg1') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isLabel(instruction.find('arg1'))):
                             ok = True
-                case "ADD" | "SUB" | "MUL" | "IDIV" | "LT" | "GT" | "EQ" | "AND" | "OR" | "NOT" | "STRI2INT" | "CONCAT" | "GETCHAR" | "SETCHAR" | "JUMPIFEQ" | "JUMPIFNEQ":
-                    if ((len(instruction) == 3)and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and (instruction.find('arg3') is not None) and self.checkExistingTypeInAtribs(instruction)):
+                case  "PUSHS" | "WRITE" | "EXIT" | "DPRINT":
+                    if ((len(instruction) == 1) and (instruction.find('arg1') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isSymb(instruction.find('arg1'))):
+                            ok = True
+                case "MOVE" | "INT2CHAR" | "STRLEN" | "TYPE" | "NOT":
+                    if ((len(instruction) == 2) and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isVar(instruction.find('arg1')) and self.isSymb(instruction.find('arg2'))):
+                            ok = True
+                case "READ":
+                    if ((len(instruction) == 2) and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isVar(instruction.find('arg1')) and self.isType(instruction.find('arg2'))):
+                            ok = True
+                case "ADD" | "SUB" | "MUL" | "IDIV" | "LT" | "GT" | "EQ" | "AND" | "OR" | "STRI2INT" | "CONCAT" | "GETCHAR" | "SETCHAR":
+                      if ((len(instruction) == 3)and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and (instruction.find('arg3') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isVar(instruction.find('arg1')) and self.isSymb(instruction.find('arg2')) and self.isSymb(instruction.find('arg3'))):
+                            ok = True
+                case  "JUMPIFEQ" | "JUMPIFNEQ":
+                    if ((len(instruction) == 3)and (instruction.find('arg1') is not None) and (instruction.find('arg2') is not None) and (instruction.find('arg3') is not None) and self.checkExistingTypeInAtribs(instruction) and self.isLabel(instruction.find('arg1')) and self.isSymb(instruction.find('arg2')) and self.isSymb(instruction.find('arg3'))):
                             ok = True
 
             if (ok == False):
@@ -95,3 +110,35 @@ class XmlChecker:
             if 'type' not in arg_element.attrib:
                 return False
         return True
+
+    def isSymb(self, arg):
+        match arg.attrib.get('type') :
+            case "var" | "int" | "bool" | "string" | "nil":
+                return True
+            case _:
+                return False
+    
+    def isLabel(self, arg):
+        if (arg.attrib.get('type')  == "label"):
+            return True
+        else:
+            return False
+    
+    def isType(self, arg):
+        if (arg.attrib.get('type')  == "type"):
+            return True
+        else:
+            return False
+        
+    def isVar(self, arg):
+        if (arg.attrib.get('type') == "var"):
+            return True
+        else:
+            return False
+        
+    def removeSpaces(self, instruction):
+        for arg in instruction:
+            if (arg.text is not None):
+                arg.text = arg.text.strip()
+
+        return instruction

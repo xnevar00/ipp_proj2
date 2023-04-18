@@ -58,7 +58,12 @@ class Interpret:
 
         if (self.args.source):
             try:
-                tree = et.parse(self.args.source)
+                file = open(self.args.source, "r")
+            except FileNotFoundError or PermissionError:
+                print("Soubor se nepodarilo otevrit.", file=sys.stderr)
+                sys.exit(11)
+            try:
+                tree = et.parse(file)
                 root = tree.getroot()
             except et.ParseError:
                 print("Chybny XML format ve vstupnim souboru", file=sys.stderr)
@@ -77,7 +82,8 @@ class Interpret:
             try:
                 sys.stdin = open(self.args.input, "r")
             except FileNotFoundError:
-                print("Soubor se nepodarilo otevrit.")
+                print("Soubor se nepodarilo otevrit.", file=sys.stderr)
+                sys.exit(11)
             
         # Vytvoření seznamu pro instrukce
         xml_checker = XmlChecker()
@@ -140,6 +146,7 @@ class Interpret:
         while (interpreter.op_counter <= len(instrukce) -1):
             instruction = instrukce[interpreter.op_counter]["instruction"]
             opcode = instruction.get('opcode')
+            opcode = opcode.upper()
             match opcode:
                 case "DEFVAR":
                     defvar.accept(interpreter, instruction, self)
