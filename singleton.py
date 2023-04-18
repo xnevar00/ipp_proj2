@@ -1,3 +1,9 @@
+#           IPP projekt 2
+#
+# author:   Veronika Nevarilova (xnevar00)
+# date:     4/2022
+# file:     singleton.py
+
 class Singleton(type):
     _instances = {}
 

@@ -4,8 +4,9 @@
 
 
 ### **1. Struktura skriptu**
-Celé řešení je rozděleno do 6 souborů:
+Celé řešení je rozděleno do 7 souborů:
 - **interpret.py** - hlavní soubor, který spouští celou interpretaci
+- **singleton.py** - definice třídy, která implementuje návrhový vzor Singleton.
 - **classInterpret.py** - třída `Intepret`, implementovaná jako Jedináček, která se stará o správu toku programu - zpracovává argumenty příkazové řádky, volá kontrolní metody jiných tříd (například na kontrolu XML vstupu), jsou v ní uloženy všechny důležité položky (uchovává rámce, datový zásobník, zásobník volání, slovník návěští), které se dále předávají při intepretaci jednotlivých operací
 - **xmlChecker.py** - třída, implementovaná jako Jedináček, pro kontrolu struktury načteného XML souboru (kontrola potřebných atributů, kontrola duplicitního pořadí operace, kontrola správného počtu argumentů vzledem k typu volané operace apod.)
 - **operations.py** - třída `Operation`, která obsahuje jedinou metodu `accept`, ze které dědí každá další operace (implementovány také jako třídy)
